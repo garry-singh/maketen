@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import "./MakeTen.css"; // Import the new CSS file
+import "./MakeTen.css";
 
 const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const operators = ["+", "-", "*", "/", "⌫", "(", ")"];
@@ -89,30 +89,38 @@ const MakeTen: React.FC = () => {
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [streak, setStreak] = useState<number>(0);
   const [longestStreak, setLongestStreak] = useState<number>(0);
+  const [solved, setSolved] = useState<boolean>(false);
 
   useEffect(() => {
     setPuzzle(generateDailyPuzzle());
     setStartTime(Date.now());
   }, []);
 
-  const checkSolution = () => {
-    try {
-      const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
-      if (eval(userInput) === 10) {
-        setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
-        if (timeElapsed < 60) {
-          setStreak((prev) => prev + 1);
-          setLongestStreak((prev) => Math.max(prev + 1, longestStreak));
-        }
-      } else {
-        setMessage("❌ Incorrect. Try again!");
-      }
-    } catch {
-      setMessage(
-        "❌ Invalid equation. Use only the given numbers and operations."
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedStreak = parseInt(localStorage.getItem("streak") || "0");
+      const savedLongestStreak = parseInt(
+        localStorage.getItem("longestStreak") || "0"
       );
+      const savedSolved = localStorage.getItem("solvedToday") === "true";
+      setStreak(savedStreak);
+      setLongestStreak(savedLongestStreak);
+      setSolved(savedSolved);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("streak", streak.toString());
+      localStorage.setItem("longestStreak", longestStreak.toString());
+    }
+  }, [streak, longestStreak]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && solved) {
+      localStorage.setItem("solvedToday", "true");
+    }
+  }, [solved]);
 
   const handleKeyboardClick = (key: string) => {
     if (key === "ENTER") {
@@ -132,13 +140,38 @@ const MakeTen: React.FC = () => {
     setUserInput(filteredValue);
   };
 
+  const checkSolution = () => {
+    if (solved) return;
+
+    try {
+      const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+      if (eval(userInput) === 10) {
+        setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
+        setSolved(true);
+        if (timeElapsed < 60) {
+          setStreak((prev) => {
+            const newStreak = prev + 1;
+            setLongestStreak((prevLongest) => Math.max(newStreak, prevLongest));
+            return newStreak;
+          });
+        }
+      } else {
+        setMessage("❌ Incorrect. Try again!");
+      }
+    } catch {
+      setMessage(
+        "❌ Invalid equation. Use only the given numbers and operations."
+      );
+    }
+  };
+
   if (!puzzle) {
     return <p className="loading">Loading today&apos;s puzzle...</p>;
   }
 
   return (
     <div className="container">
-      <h2 className="title">🎯 Make 10</h2>
+      <h2 className="title">🎯 Make 10 </h2>
       <p className="instructions">
         Use only basic operations and all these numbers exactly once to make 10:
       </p>
@@ -148,11 +181,10 @@ const MakeTen: React.FC = () => {
         value={userInput}
         onChange={handleInputChange}
         className="input-box"
+        disabled={solved}
         autoFocus
       />
       <br />
-      <br />
-
       <div className="keyboard">
         <div className="keyboard-row numbers-row">
           {numbers.map((num) => (
@@ -178,13 +210,15 @@ const MakeTen: React.FC = () => {
         </div>
         <div className="keyboard-row submit-row">
           <button
-            className="key special"
-            onClick={() => handleKeyboardClick("ENTER")}
+            className="key special solved"
+            onClick={checkSolution}
+            disabled={solved}
           >
             ENTER
           </button>
         </div>
       </div>
+      <br />
       <br />
       <br />
       {message && <h3 className="message">{message}</h3>}

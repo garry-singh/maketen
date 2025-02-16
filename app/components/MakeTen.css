@@ -17,7 +17,7 @@ body {
     font-size: 3rem;
     color: #f0f;
     text-shadow: 0 0 10px #f0f, 0 0 20px #f0f;
-    margin: 96px 0px 72px;
+    margin: 72px 0px 48px;
   }
   
   .instructions {
@@ -39,11 +39,12 @@ body {
     background: rgba(0, 0, 0, 0.8);
     border: 2px solid #f0f;
     color: #0ff;
-    padding: 15px;
+    padding: 16px;
     font-size: 1.5rem;
     border-radius: 8px;
     text-align: center;
     width: 60%;
+    margin-bottom: 16px;
   }
 
   .keyboard {
@@ -82,6 +83,12 @@ body {
   .special {
     background: linear-gradient(45deg, #ff9900, #ff3300);
     color: #fff;
+    margin-bottom: -16px;
+  }
+
+  .solved {
+    background: grey;
+    color: #fff;
   }
 
   .submit-row {
@@ -92,14 +99,14 @@ body {
     font-size: 1.5rem;
     color: #ff0;
     text-shadow: 0 0 10px #ff0;
-    margin-top: 20px;
+    margin-top: 16px;
   }
   
   .streak {
     font-size: 1.3rem;
     color: #0ff;
     text-shadow: 0 0 5px #0ff;
-    margin-top: 10px;
+    margin-top: 8px;
   }
   
   .footer {
