@@ -86,7 +86,7 @@ body {
     margin-bottom: -16px;
   }
 
-  .solved {
+  .disabled {
     background: grey;
     color: #fff;
   }

@@ -180,7 +180,7 @@ const MakeTen: React.FC = () => {
         type="text"
         value={userInput}
         onChange={handleInputChange}
-        className="input-box"
+        className={`input-box ${solved && "disabled"}`}
         disabled={solved}
         autoFocus
       />
@@ -190,7 +190,8 @@ const MakeTen: React.FC = () => {
           {numbers.map((num) => (
             <button
               key={num}
-              className="key"
+              className={`key ${solved && "disabled"}`}
+              disabled={solved}
               onClick={() => handleKeyboardClick(num)}
             >
               {num}
@@ -201,7 +202,8 @@ const MakeTen: React.FC = () => {
           {operators.map((op) => (
             <button
               key={op}
-              className="key"
+              disabled={solved}
+              className={`key ${solved && "disabled"}`}
               onClick={() => handleKeyboardClick(op)}
             >
               {op}
@@ -210,7 +212,7 @@ const MakeTen: React.FC = () => {
         </div>
         <div className="keyboard-row submit-row">
           <button
-            className="key special solved"
+            className={`key special ${solved && "disabled"}`}
             onClick={checkSolution}
             disabled={solved}
           >
