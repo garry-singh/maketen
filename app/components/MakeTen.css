@@ -17,7 +17,7 @@ body {
     font-size: 3rem;
     color: #f0f;
     text-shadow: 0 0 10px #f0f, 0 0 20px #f0f;
-    margin: 128px 0px 72px;
+    margin: 96px 0px 72px;
   }
   
   .instructions {
@@ -113,7 +113,7 @@ body {
   @media (max-width: 768px) {  
     .title {
       font-size: 2rem;
-      margin: 48px 0px;
+      margin: 40px 0px 32px;
     }
   
     .instructions {
@@ -121,7 +121,7 @@ body {
     }
   
     .numbers {
-      font-size: 1.5rem;
+      font-size: 2rem;
     }
   
     .input-box {
@@ -130,25 +130,26 @@ body {
     }
 
     .keyboard {
-        gap: 5px;
+        gap: 4px;
       }
     
       .keyboard-row {
-        gap: 5px;
+        gap: 4px;
       }
     
       .numbers-row {
         flex-wrap: wrap;
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 5px;
+        gap: 4px;
       }
     
       .operators-row {
         flex-wrap: wrap;
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
         justify-content: center;
-        gap: 5px;
+        gap: 4px;
       }
     
       .submit-row {
@@ -159,9 +160,13 @@ body {
       }
     
       .key {
-        font-size: 1.2rem;
-        padding: 10px 15px;
-        min-width: 50px;
+        font-size: 1.1rem;
+        padding: 8px 12px;
+        min-width: 48px;
+      }
+
+      .special {
+        padding: 8px 16px;
       }
   
     .message {

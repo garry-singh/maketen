@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import "./MakeTen.css"; // Import the new CSS file
 
 const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-const operators = ["+", "-", "*", "/", "⌫"];
+const operators = ["+", "-", "*", "/", "⌫", "(", ")"];
+const validKeys = new Set([...numbers, ...operators, "Enter", "Backspace"]);
 
 interface Puzzle {
   date: string;
@@ -12,7 +13,6 @@ interface Puzzle {
   solution: string;
 }
 
-// Function to generate a daily puzzle based on the date (client-side only)
 const generateDailyPuzzle = (): Puzzle => {
   function evaluateExpression(
     numbers: number[],
@@ -58,11 +58,11 @@ const generateDailyPuzzle = (): Puzzle => {
     return x - Math.floor(x);
   }
 
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  const seed = parseInt(today.split("-").join("")); // Unique number from date
+  const today = new Date().toISOString().split("T")[0];
+  const seed = parseInt(today.split("-").join(""));
 
   while (true) {
-    const numCount = Math.floor(getSeededRandom(seed) * 3) + 4; // 4 to 6 numbers
+    const numCount = Math.floor(getSeededRandom(seed) * 3) + 4;
     const numbers = Array.from(
       { length: numCount },
       () => Math.floor(getSeededRandom(seed * 2) * 10) + 1
@@ -117,11 +117,19 @@ const MakeTen: React.FC = () => {
   const handleKeyboardClick = (key: string) => {
     if (key === "ENTER") {
       checkSolution();
-    } else if (key === "⌫") {
+    } else if (key === "⌫" || key === "Backspace") {
       setUserInput((prev) => prev.slice(0, -1));
-    } else {
+    } else if (validKeys.has(key)) {
       setUserInput((prev) => prev + key);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const filteredValue = e.target.value
+      .split("")
+      .filter((char) => validKeys.has(char))
+      .join("");
+    setUserInput(filteredValue);
   };
 
   if (!puzzle) {
@@ -135,7 +143,13 @@ const MakeTen: React.FC = () => {
         Use only basic operations and all these numbers exactly once to make 10:
       </p>
       <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>
-      <input type="text" value={userInput} readOnly className="input-box" />
+      <input
+        type="text"
+        value={userInput}
+        onChange={handleInputChange}
+        className="input-box"
+        autoFocus
+      />
       <br />
       <br />
 
