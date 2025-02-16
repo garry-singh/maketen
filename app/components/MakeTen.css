@@ -45,23 +45,47 @@ body {
     text-align: center;
     width: 60%;
   }
+
+  .keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    align-items: center;
+  }
   
-  .button {
+  .keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .key {
     background: linear-gradient(45deg, #ff00ff, #00ffff);
     color: #000;
     font-size: 1.5rem;
-    padding: 12px 24px;
+    padding: 15px 20px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     box-shadow: 0px 0px 10px #0ff;
     transition: 0.3s;
-    margin-top: 20px;
+    min-width: 60px;
+    text-align: center;
   }
   
-  .button:hover {
+  .key:hover {
     transform: scale(1.1);
     box-shadow: 0px 0px 20px #ff0;
+  }
+  
+  .special {
+    background: linear-gradient(45deg, #ff9900, #ff3300);
+    color: #fff;
+  }
+
+  .submit-row {
+    margin: 40px 0 0;
   }
   
   .message {
@@ -89,7 +113,7 @@ body {
   @media (max-width: 768px) {  
     .title {
       font-size: 2rem;
-      margin: 96px 0px 48px;
+      margin: 48px 0px;
     }
   
     .instructions {
@@ -104,11 +128,41 @@ body {
       width: 80%;
       font-size: 1.2rem;
     }
-  
-    .button {
-      font-size: 1.2rem;
-      padding: 10px 20px;
-    }
+
+    .keyboard {
+        gap: 5px;
+      }
+    
+      .keyboard-row {
+        gap: 5px;
+      }
+    
+      .numbers-row {
+        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+      }
+    
+      .operators-row {
+        flex-wrap: wrap;
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+      }
+    
+      .submit-row {
+        display: flex;
+        justify-content: center;
+        margin-top: 32px;
+        margin-bottom: -16px;
+      }
+    
+      .key {
+        font-size: 1.2rem;
+        padding: 10px 15px;
+        min-width: 50px;
+      }
   
     .message {
       font-size: 1.2rem;

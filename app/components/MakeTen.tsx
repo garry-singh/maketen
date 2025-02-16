@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import "./MakeTen.css"; // Import the new CSS file
 
-const ops = ["+", "-", "*", "/"];
+const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const operators = ["+", "-", "*", "/", "⌫"];
 
 interface Puzzle {
   date: string;
@@ -44,7 +45,7 @@ const generateDailyPuzzle = (): Puzzle => {
     if (length === 0) return [[]];
     const result: string[][] = [];
     const smallerCombos = operatorCombinations(length - 1);
-    for (const op of ops) {
+    for (const op of operators) {
       for (const combo of smallerCombos) {
         result.push([op, ...combo]);
       }
@@ -97,31 +98,29 @@ const MakeTen: React.FC = () => {
   const checkSolution = () => {
     try {
       const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
-      const numbersUsed = userInput.match(/\d+/g)?.map(Number) || [];
-      const sortedNumbers = [...numbersUsed].sort((a, b) => a - b);
-      const sortedPuzzleNumbers = [...(puzzle?.numbers || [])].sort(
-        (a, b) => a - b
-      );
-
-      if (
-        eval(userInput) === 10 &&
-        JSON.stringify(sortedNumbers) === JSON.stringify(sortedPuzzleNumbers)
-      ) {
+      if (eval(userInput) === 10) {
         setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
-
         if (timeElapsed < 60) {
           setStreak((prev) => prev + 1);
           setLongestStreak((prev) => Math.max(prev + 1, longestStreak));
         }
       } else {
-        setMessage(
-          "❌ Incorrect or not all numbers used correctly. Try again!"
-        );
+        setMessage("❌ Incorrect. Try again!");
       }
     } catch {
       setMessage(
         "❌ Invalid equation. Use only the given numbers and operations."
       );
+    }
+  };
+
+  const handleKeyboardClick = (key: string) => {
+    if (key === "ENTER") {
+      checkSolution();
+    } else if (key === "⌫") {
+      setUserInput((prev) => prev.slice(0, -1));
+    } else {
+      setUserInput((prev) => prev + key);
     }
   };
 
@@ -136,30 +135,49 @@ const MakeTen: React.FC = () => {
         Use only basic operations and all these numbers exactly once to make 10:
       </p>
       <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>
-
-      <input
-        type="text"
-        value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-        placeholder="Enter your equation..."
-        className="input-box"
-      />
+      <input type="text" value={userInput} readOnly className="input-box" />
       <br />
       <br />
 
-      <button onClick={checkSolution} className="button">
-        Check Solution
-      </button>
+      <div className="keyboard">
+        <div className="keyboard-row numbers-row">
+          {numbers.map((num) => (
+            <button
+              key={num}
+              className="key"
+              onClick={() => handleKeyboardClick(num)}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+        <div className="keyboard-row operators-row">
+          {operators.map((op) => (
+            <button
+              key={op}
+              className="key"
+              onClick={() => handleKeyboardClick(op)}
+            >
+              {op}
+            </button>
+          ))}
+        </div>
+        <div className="keyboard-row submit-row">
+          <button
+            className="key special"
+            onClick={() => handleKeyboardClick("ENTER")}
+          >
+            ENTER
+          </button>
+        </div>
+      </div>
       <br />
       <br />
-
       {message && <h3 className="message">{message}</h3>}
-
       <h4 className="streak">🔥 Current Streak (under 1 min): {streak}</h4>
       <h4 className="streak">
         🏆 Longest Streak (under 1 min): {longestStreak}
       </h4>
-
       <p className="footer">Come back tomorrow for a new puzzle!</p>
     </div>
   );
