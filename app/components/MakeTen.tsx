@@ -23,17 +23,17 @@ const generateDailyPuzzle = (): Puzzle => {
     }
     try {
       return eval(expr) === 10 && !expr.includes("Infinity") ? expr : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
 
   function permute(arr: number[]): number[][] {
     if (arr.length === 1) return [arr];
-    let result: number[][] = [];
+    const result: number[][] = [];
     for (let i = 0; i < arr.length; i++) {
-      let rest = permute(arr.slice(0, i).concat(arr.slice(i + 1)));
-      for (let r of rest) {
+      const rest = permute(arr.slice(0, i).concat(arr.slice(i + 1)));
+      for (const r of rest) {
         result.push([arr[i]].concat(r));
       }
     }
@@ -42,10 +42,10 @@ const generateDailyPuzzle = (): Puzzle => {
 
   function operatorCombinations(length: number): string[][] {
     if (length === 0) return [[]];
-    let result: string[][] = [];
-    let smallerCombos = operatorCombinations(length - 1);
-    for (let op of ops) {
-      for (let combo of smallerCombos) {
+    const result: string[][] = [];
+    const smallerCombos = operatorCombinations(length - 1);
+    for (const op of ops) {
+      for (const combo of smallerCombos) {
         result.push([op, ...combo]);
       }
     }
@@ -53,7 +53,7 @@ const generateDailyPuzzle = (): Puzzle => {
   }
 
   function getSeededRandom(seed: number): number {
-    let x = Math.sin(seed) * 10000;
+    const x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
   }
 
@@ -61,8 +61,8 @@ const generateDailyPuzzle = (): Puzzle => {
   const seed = parseInt(today.split("-").join("")); // Unique number from date
 
   while (true) {
-    let numCount = Math.floor(getSeededRandom(seed) * 3) + 4; // 4 to 6 numbers
-    let numbers = Array.from(
+    const numCount = Math.floor(getSeededRandom(seed) * 3) + 4; // 4 to 6 numbers
+    const numbers = Array.from(
       { length: numCount },
       () => Math.floor(getSeededRandom(seed * 2) * 10) + 1
     );
@@ -70,9 +70,9 @@ const generateDailyPuzzle = (): Puzzle => {
     const numberPermutations = permute(numbers);
     const operatorCombinationsList = operatorCombinations(numbers.length - 1);
 
-    for (let numSet of numberPermutations) {
-      for (let opSet of operatorCombinationsList) {
-        let validExpression = evaluateExpression(numSet, opSet);
+    for (const numSet of numberPermutations) {
+      for (const opSet of operatorCombinationsList) {
+        const validExpression = evaluateExpression(numSet, opSet);
         if (validExpression) {
           return { date: today, numbers: numSet, solution: validExpression };
         }
@@ -115,14 +115,14 @@ const MakeTen: React.FC = () => {
   };
 
   if (!puzzle) {
-    return <p className="loading">Loading today's puzzle...</p>;
+    return <p className="loading">Loading today&apos;s puzzle...</p>;
   }
 
   return (
-    <div>
-      <h2 className="title">🎯 Make 10</h2>
+    <div className="container">
+      <h2 className="title">🎯 Make 10 - Daily Challenge</h2>
       <p className="instructions">
-        Use only basic operations and all these numbers exactly once to make 10:
+        Use all these numbers exactly once to make 10:
       </p>
       <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>
 
