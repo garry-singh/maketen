@@ -120,9 +120,9 @@ const MakeTen: React.FC = () => {
 
   return (
     <div className="container">
-      <h2 className="title">🎯 Make 10 - Daily Challenge</h2>
+      <h2 className="title">🎯 Make 10</h2>
       <p className="instructions">
-        Use all these numbers exactly once to make 10:
+        Use only basic operations and all these numbers exactly once to make 10:
       </p>
       <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>
 
