@@ -1,0 +1,125 @@
+/* Neon Cyberpunk & Dark Futuristic Theme */
+
+body {
+    background: #0d0d0d;
+    color: #0ff;
+    font-family: 'Orbitron', sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+  }
+  
+  .title {
+    font-size: 3rem;
+    color: #f0f;
+    text-shadow: 0 0 10px #f0f, 0 0 20px #f0f;
+    margin: 128px 0px 72px;
+  }
+  
+  .instructions {
+    font-size: 1.5rem;
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0;
+    margin: 24px 0px 24px;
+  }
+  
+  .numbers {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #0ff;
+    text-shadow: 0 0 8px #0ff;
+    margin: 24px 0px;
+  }
+  
+  .input-box {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #f0f;
+    color: #0ff;
+    padding: 15px;
+    font-size: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    width: 60%;
+  }
+  
+  .button {
+    background: linear-gradient(45deg, #ff00ff, #00ffff);
+    color: #000;
+    font-size: 1.5rem;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0px 0px 10px #0ff;
+    transition: 0.3s;
+    margin-top: 20px;
+  }
+  
+  .button:hover {
+    transform: scale(1.1);
+    box-shadow: 0px 0px 20px #ff0;
+  }
+  
+  .message {
+    font-size: 1.5rem;
+    color: #ff0;
+    text-shadow: 0 0 10px #ff0;
+    margin-top: 20px;
+  }
+  
+  .streak {
+    font-size: 1.3rem;
+    color: #0ff;
+    text-shadow: 0 0 5px #0ff;
+    margin-top: 10px;
+  }
+  
+  .footer {
+    font-size: 1.2rem;
+    color: #ff0;
+    text-shadow: 0 0 5px #ff0;
+    margin-top: 20px;
+  }
+  
+  /* Responsive Adjustments for Mobile */
+  @media (max-width: 768px) {  
+    .title {
+      font-size: 2rem;
+      margin: 96px 0px 48px;
+    }
+  
+    .instructions {
+      font-size: 1.2rem;
+    }
+  
+    .numbers {
+      font-size: 1.5rem;
+    }
+  
+    .input-box {
+      width: 80%;
+      font-size: 1.2rem;
+    }
+  
+    .button {
+      font-size: 1.2rem;
+      padding: 10px 20px;
+    }
+  
+    .message {
+      font-size: 1.2rem;
+    }
+  
+    .streak {
+      font-size: 1.1rem;
+    }
+  
+    .footer {
+      font-size: 1rem;
+    }
+  }
+  
