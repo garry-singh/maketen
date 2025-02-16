@@ -97,7 +97,16 @@ const MakeTen: React.FC = () => {
   const checkSolution = () => {
     try {
       const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
-      if (eval(userInput) === 10) {
+      const numbersUsed = userInput.match(/\d+/g)?.map(Number) || [];
+      const sortedNumbers = [...numbersUsed].sort((a, b) => a - b);
+      const sortedPuzzleNumbers = [...(puzzle?.numbers || [])].sort(
+        (a, b) => a - b
+      );
+
+      if (
+        eval(userInput) === 10 &&
+        JSON.stringify(sortedNumbers) === JSON.stringify(sortedPuzzleNumbers)
+      ) {
         setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
 
         if (timeElapsed < 60) {
@@ -105,7 +114,9 @@ const MakeTen: React.FC = () => {
           setLongestStreak((prev) => Math.max(prev + 1, longestStreak));
         }
       } else {
-        setMessage("❌ Incorrect. Try again!");
+        setMessage(
+          "❌ Incorrect or not all numbers used correctly. Try again!"
+        );
       }
     } catch {
       setMessage(
