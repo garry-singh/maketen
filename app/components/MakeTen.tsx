@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { predefinedPuzzles } from "../puzzles";
 import "./MakeTen.css";
 
 const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -41,45 +42,53 @@ const generateDailyPuzzle = (): Puzzle => {
     return result;
   }
 
-  function operatorCombinations(length: number): string[][] {
-    if (length === 0) return [[]];
-    const result: string[][] = [];
-    const smallerCombos = operatorCombinations(length - 1);
-    for (const op of operators) {
-      for (const combo of smallerCombos) {
-        result.push([op, ...combo]);
-      }
-    }
-    return result;
-  }
-
   function getSeededRandom(seed: number): number {
     const x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
   }
 
-  const today = new Date().toISOString().split("T")[0];
-  const seed = parseInt(today.split("-").join(""));
-
-  while (true) {
+  function attemptGeneratePuzzle(
+    seed: number
+  ): { numbers: number[]; solution: string } | null {
     const numCount = Math.floor(getSeededRandom(seed) * 3) + 4;
     const numbers = Array.from(
       { length: numCount },
       () => Math.floor(getSeededRandom(seed * 2) * 10) + 1
     );
 
+    if (new Set(numbers).size < 2) return null; // Ensure at least 2 unique numbers
+
     const numberPermutations = permute(numbers);
-    const operatorCombinationsList = operatorCombinations(numbers.length - 1);
+    const operators = ["+", "-", "*", "/"];
 
     for (const numSet of numberPermutations) {
-      for (const opSet of operatorCombinationsList) {
-        const validExpression = evaluateExpression(numSet, opSet);
-        if (validExpression) {
-          return { date: today, numbers: numSet, solution: validExpression };
+      for (const opSet of operators.map((op) => [op, op, op])) {
+        const expr = `(${numSet[0]} ${opSet[0]} ${numSet[1]}) ${opSet[1]} ${numSet[2]} ${opSet[2]} ${numSet[3]}`;
+        try {
+          if (eval(expr) === 10) {
+            return { numbers: numSet, solution: expr };
+          }
+        } catch {
+          continue;
         }
       }
     }
+    return null;
   }
+
+  const today = new Date().toISOString().split("T")[0]; // Get today's date
+  const seed = parseInt(today.replace(/-/g, ""));
+  let puzzle = attemptGeneratePuzzle(seed);
+
+  if (!puzzle) {
+    const fallbackPuzzle = predefinedPuzzles[seed % predefinedPuzzles.length];
+    puzzle = {
+      numbers: [...fallbackPuzzle.numbers].sort(() => Math.random() - 0.5), // Shuffle numbers
+      solution: fallbackPuzzle.solution,
+    };
+  }
+
+  return { date: today, ...puzzle }; // Include the date property
 };
 
 const MakeTen: React.FC = () => {
@@ -90,6 +99,9 @@ const MakeTen: React.FC = () => {
   const [streak, setStreak] = useState<number>(0);
   const [longestStreak, setLongestStreak] = useState<number>(0);
   const [solved, setSolved] = useState<boolean>(false);
+
+  console.log("Today's date:", new Date().toISOString().split("T")[0]);
+  console.log("Generated puzzle:", puzzle);
 
   useEffect(() => {
     setPuzzle(generateDailyPuzzle());
@@ -144,7 +156,9 @@ const MakeTen: React.FC = () => {
     if (solved) return;
 
     try {
-      const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+      const timeElapsed = parseFloat(
+        ((Date.now() - startTime) / 1000).toFixed(3)
+      );
       if (eval(userInput) === 10) {
         setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
         setSolved(true);
@@ -168,6 +182,16 @@ const MakeTen: React.FC = () => {
   if (!puzzle) {
     return <p className="loading">Loading today&apos;s puzzle...</p>;
   }
+
+  // const shareResult = () => {
+  //   const shareText = `🎯 I solved today's Make 10 in ${Math.floor(
+  //     (Date.now() - startTime) / 1000
+  //   )} seconds! Can you? \n\nUse: ${puzzle?.numbers.join(
+  //     " "
+  //   )} \n#Make10Challenge \nPlay here: [maketen.vercel.app]`;
+  //   navigator.clipboard.writeText(shareText);
+  //   setMessage("📋 Result copied! Share it with friends!");
+  // };
 
   return (
     <div className="container">
