@@ -215,8 +215,12 @@ const MakeTen: React.FC = () => {
           {numbers.map((num) => (
             <button
               key={num}
-              className={`key ${solved && "disabled"}`}
-              disabled={solved}
+              className={`key ${
+                solved || !puzzle.numbers.includes(parseInt(num))
+                  ? "disabled"
+                  : ""
+              }`}
+              disabled={solved || !puzzle.numbers.includes(parseInt(num))}
               onClick={() => handleKeyboardClick(num)}
             >
               {num}
