@@ -15,21 +15,6 @@ interface Puzzle {
 }
 
 const generateDailyPuzzle = (): Puzzle => {
-  function evaluateExpression(
-    numbers: number[],
-    operators: string[]
-  ): string | null {
-    let expr = numbers[0].toString();
-    for (let i = 0; i < operators.length; i++) {
-      expr += ` ${operators[i]} ${numbers[i + 1]}`;
-    }
-    try {
-      return eval(expr) === 10 && !expr.includes("Infinity") ? expr : null;
-    } catch {
-      return null;
-    }
-  }
-
   function permute(arr: number[]): number[][] {
     if (arr.length === 1) return [arr];
     const result: number[][] = [];
