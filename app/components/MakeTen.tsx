@@ -197,18 +197,25 @@ const MakeTen: React.FC = () => {
   return (
     <div className="container">
       <h2 className="title">🎯 Make 10 </h2>
-      <p className="instructions">
-        Use only basic operations and all these numbers exactly once to make 10:
-      </p>
-      <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>
-      <input
-        type="text"
-        value={userInput}
-        onChange={handleInputChange}
-        className={`input-box ${solved && "disabled"}`}
-        disabled={solved}
-        autoFocus
-      />
+      {!solved && (
+        <p className="instructions">
+          Use only basic operations and all these numbers exactly once to make
+          10:
+        </p>
+      )}
+      {!solved && <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>}
+      {solved ? (
+        <p className="footer">Come back tomorrow for a new puzzle!</p>
+      ) : (
+        <input
+          type="text"
+          value={userInput}
+          onChange={handleInputChange}
+          className={`input-box ${solved && "disabled"}`}
+          disabled={solved}
+          autoFocus
+        />
+      )}
       <br />
       <div className="keyboard">
         <div className="keyboard-row numbers-row">
@@ -257,7 +264,6 @@ const MakeTen: React.FC = () => {
       <h4 className="streak">
         🏆 Longest Streak (under 30 sec): {longestStreak}
       </h4>
-      <p className="footer">Come back tomorrow for a new puzzle!</p>
     </div>
   );
 };
