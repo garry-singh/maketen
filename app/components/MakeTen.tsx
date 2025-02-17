@@ -114,10 +114,18 @@ const MakeTen: React.FC = () => {
   }, [streak, longestStreak]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && solved) {
-      localStorage.setItem("solvedToday", "true");
+    const today = new Date().toISOString().split("T")[0]; // Get today's date
+    const savedSolved = localStorage.getItem("solvedToday");
+    const savedSolvedDate = localStorage.getItem("solvedDate");
+
+    if (savedSolved === "true" && savedSolvedDate === today) {
+      setSolved(true); // ✅ Mark as solved if it was solved today
+    } else {
+      localStorage.setItem("solvedToday", "false"); // ✅ Reset solved status if it's a new day
+      localStorage.setItem("solvedDate", today);
+      setSolved(false);
     }
-  }, [solved]);
+  }, []);
 
   const handleKeyboardClick = (key: string) => {
     if (key === "ENTER") {
@@ -138,7 +146,7 @@ const MakeTen: React.FC = () => {
   };
 
   const checkSolution = () => {
-    if (solved) return;
+    if (solved) return; // If already solved, do nothing
 
     try {
       const timeElapsed = parseFloat(
@@ -147,12 +155,30 @@ const MakeTen: React.FC = () => {
       if (eval(userInput) === 10) {
         setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
         setSolved(true);
-        if (timeElapsed < 60) {
-          setStreak((prev) => {
-            const newStreak = prev + 1;
-            setLongestStreak((prevLongest) => Math.max(newStreak, prevLongest));
-            return newStreak;
-          });
+
+        // ✅ Save "solved today" in LocalStorage
+        const today = new Date().toISOString().split("T")[0];
+        localStorage.setItem("solvedToday", "true");
+        localStorage.setItem("solvedDate", today);
+
+        // ✅ Retrieve previous streaks from state
+        const prevStreak = parseInt(localStorage.getItem("streak") || "0", 10);
+        const prevLongestStreak = parseInt(
+          localStorage.getItem("longestStreak") || "0",
+          10
+        );
+
+        // ✅ Increment streak if solved in under 30 seconds
+        if (timeElapsed < 30) {
+          const newStreak = prevStreak + 1;
+          const newLongestStreak = Math.max(newStreak, prevLongestStreak);
+
+          setStreak(newStreak);
+          setLongestStreak(newLongestStreak);
+
+          // ✅ Save updated streaks in LocalStorage
+          localStorage.setItem("streak", newStreak.toString());
+          localStorage.setItem("longestStreak", newLongestStreak.toString());
         }
       } else {
         setMessage("❌ Incorrect. Try again!");
@@ -167,16 +193,6 @@ const MakeTen: React.FC = () => {
   if (!puzzle) {
     return <p className="loading">Loading today&apos;s puzzle...</p>;
   }
-
-  // const shareResult = () => {
-  //   const shareText = `🎯 I solved today's Make 10 in ${Math.floor(
-  //     (Date.now() - startTime) / 1000
-  //   )} seconds! Can you? \n\nUse: ${puzzle?.numbers.join(
-  //     " "
-  //   )} \n#Make10Challenge \nPlay here: [maketen.vercel.app]`;
-  //   navigator.clipboard.writeText(shareText);
-  //   setMessage("📋 Result copied! Share it with friends!");
-  // };
 
   return (
     <div className="container">
@@ -233,9 +249,9 @@ const MakeTen: React.FC = () => {
       <br />
       <br />
       {message && <h3 className="message">{message}</h3>}
-      <h4 className="streak">🔥 Current Streak (under 1 min): {streak}</h4>
+      <h4 className="streak">🔥 Current Streak (under 30 sec): {streak}</h4>
       <h4 className="streak">
-        🏆 Longest Streak (under 1 min): {longestStreak}
+        🏆 Longest Streak (under 30 sec): {longestStreak}
       </h4>
       <p className="footer">Come back tomorrow for a new puzzle!</p>
     </div>
