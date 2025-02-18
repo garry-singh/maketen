@@ -84,6 +84,7 @@ const MakeTen: React.FC = () => {
   const [streak, setStreak] = useState<number>(0);
   const [longestStreak, setLongestStreak] = useState<number>(0);
   const [solved, setSolved] = useState<boolean>(false);
+  const [timeLeft, setTimeLeft] = useState<string>("");
 
   console.log("Today's date:", new Date().toISOString().split("T")[0]);
   console.log("Generated puzzle:", puzzle);
@@ -91,6 +92,27 @@ const MakeTen: React.FC = () => {
   useEffect(() => {
     setPuzzle(generateDailyPuzzle());
     setStartTime(Date.now());
+  }, []);
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date();
+      const nextPuzzleTime = new Date();
+      nextPuzzleTime.setUTCHours(0, 0, 0, 0);
+      nextPuzzleTime.setUTCDate(nextPuzzleTime.getUTCDate() + 1);
+
+      const diff = nextPuzzleTime.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -217,7 +239,7 @@ const MakeTen: React.FC = () => {
       )}
       {!solved && <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>}
       {solved ? (
-        <p className="footer">Come back tomorrow for a new puzzle!</p>
+        <p className="footer">Come back in {timeLeft} for a new puzzle!</p>
       ) : (
         <input
           type="text"
