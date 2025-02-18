@@ -80,7 +80,7 @@ const MakeTen: React.FC = () => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [userInput, setUserInput] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-  const [startTime, setStartTime] = useState<number>(Date.now());
+  const [startTime] = useState<number>(Date.now());
   const [streaks, setStreaks] = useState({ streak: 0, longestStreak: 0 });
   const [solved, setSolved] = useState<boolean>(false);
   const [localResetTime, setLocalResetTime] = useState<string>("");
