@@ -116,6 +116,46 @@ body {
     margin-top: 20px;
   }
   
+  .social-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .social-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    margin-bottom: 24px;
+  }
+  
+  .social-button .icon {
+    font-size: 1.2rem;
+  }
+  
+  .twitter {
+    background-color: #1da1f2;
+    color: white;
+  }
+  
+  .instagram {
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    color: white;
+  }
+  
+  .social-button:hover {
+    opacity: 0.8;
+  }  
+
   /* Responsive Adjustments for Mobile */
   @media (max-width: 768px) {  
     .title {
@@ -169,6 +209,7 @@ body {
       .key {
         font-size: 1.1rem;
         padding: 8px 12px;
+        min-height: 48px;
         min-width: 48px;
       }
 

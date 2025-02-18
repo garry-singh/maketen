@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { FaTwitter, FaInstagram } from "react-icons/fa";
 import { predefinedPuzzles } from "../puzzles";
 import "./MakeTen.css";
+
+const SOCIAL_LINKS = {
+  twitter: "https://twitter.com/MakeTenGame",
+  instagram: "https://instagram.com/MakeTenGame",
+};
 
 const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const operators = ["+", "-", "*", "/", "⌫", "(", ")"];
@@ -84,9 +90,6 @@ const MakeTen: React.FC = () => {
   const [streaks, setStreaks] = useState({ streak: 0, longestStreak: 0 });
   const [solved, setSolved] = useState<boolean>(false);
   const [localResetTime, setLocalResetTime] = useState<string>("");
-
-  console.log("Today's date:", new Date().toISOString().split("T")[0]);
-  console.log("Generated puzzle:", puzzle);
 
   useEffect(() => {
     setPuzzle(generateDailyPuzzle());
@@ -306,6 +309,31 @@ const MakeTen: React.FC = () => {
       <h4 className="streak">
         🏆 Longest Streak (under 30 sec): {streaks.longestStreak}
       </h4>
+      {solved && (
+        <div className="social-buttons">
+          <a
+            href={SOCIAL_LINKS.twitter}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <button className="social-button twitter">
+              <FaTwitter className="icon" />
+              Twitter/X
+            </button>
+          </a>
+
+          <a
+            href={SOCIAL_LINKS.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <button className="social-button instagram">
+              <FaInstagram className="icon" />
+              Instagram
+            </button>
+          </a>
+        </div>
+      )}
     </div>
   );
 };
