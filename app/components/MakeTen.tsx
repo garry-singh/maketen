@@ -152,7 +152,19 @@ const MakeTen: React.FC = () => {
       const timeElapsed = parseFloat(
         ((Date.now() - startTime) / 1000).toFixed(3)
       );
+      const inputNumbers = userInput.match(/\d+/g)?.map(Number) || [];
+      const sortedInputNumbers = [...inputNumbers].sort((a, b) => a - b);
+      const sortedPuzzleNumbers = [...puzzle!.numbers].sort((a, b) => a - b);
+
       if (eval(userInput) === 10) {
+        if (
+          JSON.stringify(sortedInputNumbers) !==
+          JSON.stringify(sortedPuzzleNumbers)
+        ) {
+          setMessage("❌ You must use all given numbers exactly once!");
+          return;
+        }
+
         setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
         setSolved(true);
 
