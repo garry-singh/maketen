@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaTwitter, FaInstagram } from "react-icons/fa";
+import { FaXTwitter, FaInstagram } from "react-icons/fa6";
 import { predefinedPuzzles } from "../puzzles";
 import "./MakeTen.css";
 
@@ -317,7 +317,7 @@ const MakeTen: React.FC = () => {
             rel="noopener noreferrer"
           >
             <button className="social-button twitter">
-              <FaTwitter className="icon" />
+              <FaXTwitter className="icon" />
               Twitter/X
             </button>
           </a>
