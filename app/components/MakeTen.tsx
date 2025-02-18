@@ -81,38 +81,44 @@ const MakeTen: React.FC = () => {
   const [userInput, setUserInput] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [startTime, setStartTime] = useState<number>(Date.now());
-  const [streak, setStreak] = useState<number>(0);
-  const [longestStreak, setLongestStreak] = useState<number>(0);
+  const [streaks, setStreaks] = useState({ streak: 0, longestStreak: 0 });
   const [solved, setSolved] = useState<boolean>(false);
-  const [timeLeft, setTimeLeft] = useState<string>("");
+  const [localResetTime, setLocalResetTime] = useState<string>("");
 
   console.log("Today's date:", new Date().toISOString().split("T")[0]);
   console.log("Generated puzzle:", puzzle);
 
   useEffect(() => {
     setPuzzle(generateDailyPuzzle());
-    setStartTime(Date.now());
+    // setStartTime(Date.now());
   }, []);
 
   useEffect(() => {
-    const updateCountdown = () => {
-      const now = new Date();
-      const nextPuzzleTime = new Date();
-      nextPuzzleTime.setUTCHours(0, 0, 0, 0);
-      nextPuzzleTime.setUTCDate(nextPuzzleTime.getUTCDate() + 1);
+    // ✅ Get user's time zone
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      const diff = nextPuzzleTime.getTime() - now.getTime();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    // ✅ Define puzzle reset time in UTC (Midnight UTC)
+    const nextPuzzleTimeUTC = new Date();
+    nextPuzzleTimeUTC.setUTCHours(0, 0, 0, 0);
+    nextPuzzleTimeUTC.setUTCDate(nextPuzzleTimeUTC.getUTCDate() + 1); // Move to next day's midnight
 
-      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-    };
+    // ✅ Convert UTC time to user's local time
+    const localTime = nextPuzzleTimeUTC.toLocaleTimeString("en-US", {
+      timeZone: userTimeZone,
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true, // Show AM/PM
+    });
 
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
+    // ✅ Calculate hours & minutes remaining
+    const now = new Date();
+    const diff = nextPuzzleTimeUTC.getTime() - now.getTime();
+    const hoursLeft = Math.floor(diff / (1000 * 60 * 60));
+    const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-    return () => clearInterval(interval);
+    setLocalResetTime(
+      `${localTime} local time (${hoursLeft}h ${minutesLeft}m left)`
+    );
   }, []);
 
   useEffect(() => {
@@ -122,18 +128,17 @@ const MakeTen: React.FC = () => {
         localStorage.getItem("longestStreak") || "0"
       );
       const savedSolved = localStorage.getItem("solvedToday") === "true";
-      setStreak(savedStreak);
-      setLongestStreak(savedLongestStreak);
+      setStreaks({ streak: savedStreak, longestStreak: savedLongestStreak });
       setSolved(savedSolved);
     }
   }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("streak", streak.toString());
-      localStorage.setItem("longestStreak", longestStreak.toString());
+      localStorage.setItem("streak", streaks.streak.toString());
+      localStorage.setItem("longestStreak", streaks.longestStreak.toString());
     }
-  }, [streak, longestStreak]);
+  }, [streaks]);
 
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0]; // Get today's date
@@ -207,8 +212,7 @@ const MakeTen: React.FC = () => {
           const newStreak = prevStreak + 1;
           const newLongestStreak = Math.max(newStreak, prevLongestStreak);
 
-          setStreak(newStreak);
-          setLongestStreak(newLongestStreak);
+          setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
 
           // ✅ Save updated streaks in LocalStorage
           localStorage.setItem("streak", newStreak.toString());
@@ -239,7 +243,9 @@ const MakeTen: React.FC = () => {
       )}
       {!solved && <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>}
       {solved ? (
-        <p className="footer">Come back in {timeLeft} for a new puzzle!</p>
+        <p className="footer">
+          Come back at {localResetTime} for a new puzzle!
+        </p>
       ) : (
         <input
           type="text"
@@ -294,9 +300,11 @@ const MakeTen: React.FC = () => {
       <br />
       <br />
       {message && <h3 className="message">{message}</h3>}
-      <h4 className="streak">🔥 Current Streak (under 30 sec): {streak}</h4>
       <h4 className="streak">
-        🏆 Longest Streak (under 30 sec): {longestStreak}
+        🔥 Current Streak (under 30 sec): {streaks.streak}
+      </h4>
+      <h4 className="streak">
+        🏆 Longest Streak (under 30 sec): {streaks.longestStreak}
       </h4>
     </div>
   );
