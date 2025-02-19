@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FaXTwitter, FaInstagram } from "react-icons/fa6";
+import { FaXTwitter } from "react-icons/fa6";
 import { predefinedPuzzles } from "../puzzles";
 import "./MakeTen.css";
 
 const SOCIAL_LINKS = {
   twitter: "https://twitter.com/MakeTenGame",
-  instagram: "https://instagram.com/MakeTenGame",
 };
 
 const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -89,6 +88,7 @@ const MakeTen: React.FC = () => {
   const [startTime] = useState<number>(Date.now());
   const [streaks, setStreaks] = useState({ streak: 0, longestStreak: 0 });
   const [solved, setSolved] = useState<boolean>(false);
+  const [solveTime, setSolveTime] = useState<number | null>(null);
   const [localResetTime, setLocalResetTime] = useState<string>("");
 
   useEffect(() => {
@@ -196,6 +196,7 @@ const MakeTen: React.FC = () => {
         }
 
         setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
+        setSolveTime(timeElapsed);
         setSolved(true);
 
         // ✅ Save "solved today" in LocalStorage
@@ -211,7 +212,7 @@ const MakeTen: React.FC = () => {
         );
 
         // ✅ Increment streak if solved in under 30 seconds
-        if (timeElapsed < 30) {
+        if (timeElapsed < 45) {
           const newStreak = prevStreak + 1;
           const newLongestStreak = Math.max(newStreak, prevLongestStreak);
 
@@ -234,6 +235,31 @@ const MakeTen: React.FC = () => {
   if (!puzzle) {
     return <p className="loading">Loading today&apos;s puzzle...</p>;
   }
+
+  const copyToClipboard = () => {
+    if (!userInput) return;
+
+    // Replace numbers with black squares, brackets with white squares
+    const maskedSolution = userInput
+      .replace(/[0-9]/g, "⬛")
+      .replace(/\(/g, "⬜")
+      .replace(/\)/g, "⬜");
+
+    // Color code the operators
+    const coloredOperators = maskedSolution
+      .replace(/\+/g, "+")
+      .replace(/-/g, "-")
+      .replace(/\*/g, "*")
+      .replace(/\//g, "/");
+
+    // Format the shareable text
+    const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareText).then(() => {
+      alert("✅ Solution copied to clipboard! Share it with friends.");
+    });
+  };
 
   return (
     <div className="container">
@@ -289,25 +315,27 @@ const MakeTen: React.FC = () => {
             </button>
           ))}
         </div>
-        <div className="keyboard-row submit-row">
-          <button
-            className={`key special ${solved && "disabled"}`}
-            onClick={checkSolution}
-            disabled={solved}
-          >
-            ENTER
-          </button>
-        </div>
+        {!solved && (
+          <div className="keyboard-row submit-row">
+            <button
+              className={`key special ${solved && "disabled"}`}
+              onClick={checkSolution}
+              disabled={solved}
+            >
+              ENTER
+            </button>
+          </div>
+        )}
       </div>
       <br />
       <br />
       <br />
       {message && <h3 className="message">{message}</h3>}
       <h4 className="streak">
-        🔥 Current Streak (under 30 sec): {streaks.streak}
+        🔥 Current Streak (under 45 sec): {streaks.streak}
       </h4>
       <h4 className="streak">
-        🏆 Longest Streak (under 30 sec): {streaks.longestStreak}
+        🏆 Longest Streak (under 45 sec): {streaks.longestStreak}
       </h4>
       {solved && (
         <div className="social-buttons">
@@ -321,17 +349,9 @@ const MakeTen: React.FC = () => {
               Twitter/X
             </button>
           </a>
-
-          <a
-            href={SOCIAL_LINKS.instagram}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <button className="social-button instagram">
-              <FaInstagram className="icon" />
-              Instagram
-            </button>
-          </a>
+          <button onClick={copyToClipboard} className="social-button instagram">
+            📤 Share
+          </button>
         </div>
       )}
     </div>
