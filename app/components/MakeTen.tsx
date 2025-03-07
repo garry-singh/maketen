@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { FaXTwitter } from "react-icons/fa6";
-import { predefinedPuzzles } from "../puzzles";
+import { predefinedPuzzles } from "../makeTenPuzzles";
 import "./MakeTen.css";
 
 const SOCIAL_LINKS = {
-  twitter: "https://twitter.com/MakeTenGame",
+  twitter: "https://x.com/MakeTenGame",
 };
 
 const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -85,15 +85,30 @@ const MakeTen: React.FC = () => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [userInput, setUserInput] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-  const [startTime] = useState<number>(Date.now());
+  const [startTime, setStartTime] = useState<number>(Date.now());
   const [streaks, setStreaks] = useState({ streak: 0, longestStreak: 0 });
   const [solved, setSolved] = useState<boolean>(false);
   const [solveTime, setSolveTime] = useState<number | null>(null);
   const [localResetTime, setLocalResetTime] = useState<string>("");
+  const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
 
   useEffect(() => {
-    setPuzzle(generateDailyPuzzle());
-    // setStartTime(Date.now());
+    const generatedPuzzle = generateDailyPuzzle();
+    setPuzzle(generatedPuzzle);
+    setUsedNumbers(new Array(generatedPuzzle.numbers.length).fill(0)); // Initialize usage tracker
+
+    const today = new Date().toISOString().split("T")[0]; // Get today's date
+    const savedStartTime = localStorage.getItem("puzzleStartTime");
+    const savedPuzzleDate = localStorage.getItem("puzzleDate");
+
+    if (savedStartTime && savedPuzzleDate === today) {
+      setStartTime(parseInt(savedStartTime, 10)); // ✅ Restore start time if puzzle hasn't changed
+    } else {
+      const newStartTime = Date.now();
+      setStartTime(newStartTime);
+      localStorage.setItem("puzzleStartTime", newStartTime.toString()); // ✅ Save start time
+      localStorage.setItem("puzzleDate", today); // ✅ Save today's date
+    }
   }, []);
 
   useEffect(() => {
@@ -160,10 +175,43 @@ const MakeTen: React.FC = () => {
   const handleKeyboardClick = (key: string) => {
     if (key === "ENTER") {
       checkSolution();
+      return;
     } else if (key === "⌫" || key === "Backspace") {
+      removeLastUsedNumber();
       setUserInput((prev) => prev.slice(0, -1));
+      return;
     } else if (validKeys.has(key)) {
       setUserInput((prev) => prev + key);
+      markNumberUsed(parseInt(key)); // Track number usage
+    }
+  };
+
+  const markNumberUsed = (num: number) => {
+    if (!puzzle) return;
+
+    const numIndex = puzzle.numbers.findIndex(
+      (n, index) => n === num && usedNumbers[index] === 0
+    );
+
+    if (numIndex !== -1) {
+      const updatedUsage = [...usedNumbers];
+      updatedUsage[numIndex] = 1; // Mark as used
+      setUsedNumbers(updatedUsage);
+    }
+  };
+
+  const removeLastUsedNumber = () => {
+    if (!puzzle) return;
+
+    const lastNum = parseInt(userInput[userInput.length - 1]);
+    if (!isNaN(lastNum)) {
+      const lastUsedIndex = usedNumbers.lastIndexOf(1);
+
+      if (lastUsedIndex !== -1) {
+        const updatedUsage = [...usedNumbers];
+        updatedUsage[lastUsedIndex] = 0; // Mark as unused
+        setUsedNumbers(updatedUsage);
+      }
     }
   };
 
@@ -199,29 +247,40 @@ const MakeTen: React.FC = () => {
         setSolveTime(timeElapsed);
         setSolved(true);
 
-        // ✅ Save "solved today" in LocalStorage
+        // ✅ Get today's date
         const today = new Date().toISOString().split("T")[0];
-        localStorage.setItem("solvedToday", "true");
-        localStorage.setItem("solvedDate", today);
 
-        // ✅ Retrieve previous streaks from state
-        const prevStreak = parseInt(localStorage.getItem("streak") || "0", 10);
+        // ✅ Get last solved date
+        const lastSolvedDate = localStorage.getItem("solvedDate");
+
+        // ✅ Check if they missed a day
+        let newStreak = 1; // Start fresh if they missed a day
+        if (lastSolvedDate) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+          if (lastSolvedDate === yesterdayStr) {
+            // ✅ Continue streak if solved yesterday
+            newStreak = parseInt(localStorage.getItem("streak") || "0", 10) + 1;
+          }
+        }
+
+        // ✅ Retrieve longest streak
         const prevLongestStreak = parseInt(
           localStorage.getItem("longestStreak") || "0",
           10
         );
+        const newLongestStreak = Math.max(newStreak, prevLongestStreak);
 
-        // ✅ Increment streak if solved in under 30 seconds
-        if (timeElapsed < 45) {
-          const newStreak = prevStreak + 1;
-          const newLongestStreak = Math.max(newStreak, prevLongestStreak);
+        // ✅ Update state
+        setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
 
-          setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
-
-          // ✅ Save updated streaks in LocalStorage
-          localStorage.setItem("streak", newStreak.toString());
-          localStorage.setItem("longestStreak", newLongestStreak.toString());
-        }
+        // ✅ Save in LocalStorage
+        localStorage.setItem("solvedToday", "true");
+        localStorage.setItem("solvedDate", today);
+        localStorage.setItem("streak", newStreak.toString());
+        localStorage.setItem("longestStreak", newLongestStreak.toString());
       } else {
         setMessage("❌ Incorrect. Try again!");
       }
@@ -236,29 +295,48 @@ const MakeTen: React.FC = () => {
     return <p className="loading">Loading today&apos;s puzzle...</p>;
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (!userInput) return;
 
-    // Replace numbers with black squares, brackets with white squares
     const maskedSolution = userInput
       .replace(/[0-9]/g, "⬛")
       .replace(/\(/g, "⬜")
       .replace(/\)/g, "⬜");
 
-    // Color code the operators
     const coloredOperators = maskedSolution
       .replace(/\+/g, "+")
       .replace(/-/g, "-")
       .replace(/\*/g, "*")
       .replace(/\//g, "/");
 
-    // Format the shareable text
     const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
 
-    // Copy to clipboard
-    navigator.clipboard.writeText(shareText).then(() => {
-      alert("✅ Solution copied to clipboard! Share it with friends.");
-    });
+    // Check if Web Share API is supported
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Make 10 Puzzle",
+          text: shareText,
+          url: "https://maketen.vercel.app/",
+        });
+        return;
+      } catch (err) {
+        console.error("Error sharing via Web Share API:", err);
+      }
+    }
+
+    // Fallback: Copy to clipboard
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        alert("✅ Solution copied to clipboard! Share it with friends.");
+      } catch (err) {
+        console.error("Clipboard write failed:", err);
+        alert("❌ Unable to copy to clipboard.");
+      }
+    } else {
+      alert("❌ Sharing is not supported on your device.");
+    }
   };
 
   return (
@@ -270,7 +348,18 @@ const MakeTen: React.FC = () => {
           10:
         </p>
       )}
-      {!solved && <h3 className="numbers">{puzzle.numbers.join("  ")}</h3>}
+      {!solved && (
+        <h3 className="numbers">
+          {puzzle.numbers.map((num, index) => (
+            <span
+              key={index}
+              className={usedNumbers[index] ? "greyed-out" : ""}
+            >
+              {num}{" "}
+            </span>
+          ))}
+        </h3>
+      )}
       {solved ? (
         <p className="footer">
           Come back at {localResetTime} for a new puzzle!

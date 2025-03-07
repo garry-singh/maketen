@@ -156,6 +156,12 @@ body {
     opacity: 0.8;
   }  
 
+  .greyed-out {
+    color: grey;
+    text-shadow: none;
+    opacity: 0.5;
+  }  
+
   /* Responsive Adjustments for Mobile */
   @media (max-width: 768px) {  
     .title {
