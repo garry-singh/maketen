@@ -141,13 +141,22 @@ const MakeTen: React.FC = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedStreak = parseInt(localStorage.getItem("streak") || "0");
-      const savedLongestStreak = parseInt(
-        localStorage.getItem("longestStreak") || "0"
-      );
+      const savedStreak =
+        parseInt(localStorage.getItem("streak") || "0", 10) || 0;
+      const savedLongestStreak =
+        parseInt(localStorage.getItem("longestStreak") || "0", 10) || 0;
       const savedSolved = localStorage.getItem("solvedToday") === "true";
+
       setStreaks({ streak: savedStreak, longestStreak: savedLongestStreak });
       setSolved(savedSolved);
+
+      // Check if the streak needs to reset for a new day
+      const today = new Date().toISOString().split("T")[0];
+      const lastSolvedDate = localStorage.getItem("solvedDate");
+
+      if (lastSolvedDate !== today) {
+        localStorage.setItem("solvedToday", "false"); // Reset solved status
+      }
     }
   }, []);
 
@@ -224,7 +233,7 @@ const MakeTen: React.FC = () => {
   };
 
   const checkSolution = () => {
-    if (solved) return; // If already solved, do nothing
+    if (solved) return;
 
     try {
       const timeElapsed = parseFloat(
@@ -247,36 +256,31 @@ const MakeTen: React.FC = () => {
         setSolveTime(timeElapsed);
         setSolved(true);
 
-        // ✅ Get today's date
         const today = new Date().toISOString().split("T")[0];
-
-        // ✅ Get last solved date
         const lastSolvedDate = localStorage.getItem("solvedDate");
 
-        // ✅ Check if they missed a day
-        let newStreak = 1; // Start fresh if they missed a day
+        let newStreak = 1; // Default to 1 if no previous streak exists
         if (lastSolvedDate) {
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = yesterday.toISOString().split("T")[0];
 
           if (lastSolvedDate === yesterdayStr) {
-            // ✅ Continue streak if solved yesterday
-            newStreak = parseInt(localStorage.getItem("streak") || "0", 10) + 1;
+            newStreak =
+              (parseInt(localStorage.getItem("streak") || "0", 10) || 0) + 1;
+          } else {
+            newStreak = 1; // Reset streak if more than one day was missed
           }
         }
 
-        // ✅ Retrieve longest streak
-        const prevLongestStreak = parseInt(
-          localStorage.getItem("longestStreak") || "0",
-          10
-        );
+        const prevLongestStreak =
+          parseInt(localStorage.getItem("longestStreak") || "0", 10) || 0;
         const newLongestStreak = Math.max(newStreak, prevLongestStreak);
 
-        // ✅ Update state
+        // Update React state
         setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
 
-        // ✅ Save in LocalStorage
+        // Persist in localStorage
         localStorage.setItem("solvedToday", "true");
         localStorage.setItem("solvedDate", today);
         localStorage.setItem("streak", newStreak.toString());
