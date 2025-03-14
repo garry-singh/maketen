@@ -3,7 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { FaXTwitter } from "react-icons/fa6";
 import { predefinedPuzzles } from "../makeTenPuzzles";
-import "./MakeTen.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { ModeToggle } from "@/app/components/mode-toggle";
 
 const SOCIAL_LINKS = {
   twitter: "https://x.com/MakeTenGame",
@@ -112,6 +115,49 @@ const generateDailyPuzzle = (): Puzzle => {
   return { date: today, ...puzzle }; // Include the date property
 };
 
+const KeyboardButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<typeof Button> & {
+    active?: boolean;
+  }
+>(({ className, active, ...props }, ref) => (
+  <Button
+    ref={ref}
+    variant={active ? "default" : "outline"}
+    className={cn(
+      "h-12 w-12 text-base font-semibold transition-all md:h-14 md:w-14 md:text-lg",
+      active && "bg-primary text-primary-foreground",
+      className
+    )}
+    {...props}
+  />
+));
+KeyboardButton.displayName = "KeyboardButton";
+
+const LoadingOrErrorView: React.FC<{
+  title?: string;
+  message?: string;
+  showRefresh?: boolean;
+}> = ({ title = "🎯 Make 10", message, showRefresh = false }) => (
+  <div className="w-full max-w-4xl mx-auto px-4 py-8">
+    <div className="space-y-6">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold">{title}</h1>
+        {message && <p className="text-lg text-destructive">{message}</p>}
+        {showRefresh && (
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            size="lg"
+          >
+            Refresh Page
+          </Button>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
 const MakeTen: React.FC = () => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [userInput, setUserInput] = useState<string>("");
@@ -155,15 +201,15 @@ const MakeTen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // ✅ Get user's time zone
+    // Get user's time zone
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-    // ✅ Define puzzle reset time in UTC (Midnight UTC)
+    // Define puzzle reset time in UTC (Midnight UTC)
     const nextPuzzleTimeUTC = new Date();
     nextPuzzleTimeUTC.setUTCHours(0, 0, 0, 0);
     nextPuzzleTimeUTC.setUTCDate(nextPuzzleTimeUTC.getUTCDate() + 1); // Move to next day's midnight
 
-    // ✅ Convert UTC time to user's local time
+    // Convert UTC time to user's local time
     const localTime = nextPuzzleTimeUTC.toLocaleTimeString("en-US", {
       timeZone: userTimeZone,
       hour: "numeric",
@@ -171,7 +217,7 @@ const MakeTen: React.FC = () => {
       hour12: true, // Show AM/PM
     });
 
-    // ✅ Calculate hours & minutes remaining
+    // Calculate hours & minutes remaining
     const now = new Date();
     const diff = nextPuzzleTimeUTC.getTime() - now.getTime();
     const hoursLeft = Math.floor(diff / (1000 * 60 * 60));
@@ -216,9 +262,9 @@ const MakeTen: React.FC = () => {
     const savedSolvedDate = localStorage.getItem("solvedDate");
 
     if (savedSolved === "true" && savedSolvedDate === today) {
-      setSolved(true); // ✅ Mark as solved if it was solved today
+      setSolved(true); // Mark as solved if it was solved today
     } else {
-      localStorage.setItem("solvedToday", "false"); // ✅ Reset solved status if it's a new day
+      localStorage.setItem("solvedToday", "false"); // Reset solved status if it's a new day
       localStorage.setItem("solvedDate", today);
       setSolved(false);
     }
@@ -289,7 +335,7 @@ const MakeTen: React.FC = () => {
       // Validate expression before evaluation
       const validation = validateExpression(userInput);
       if (!validation.isValid) {
-        setMessage(`❌ ${validation.error}`);
+        setMessage(`${validation.error}`);
         return;
       }
 
@@ -298,11 +344,11 @@ const MakeTen: React.FC = () => {
           JSON.stringify(sortedInputNumbers) !==
           JSON.stringify(sortedPuzzleNumbers)
         ) {
-          setMessage("❌ You must use all given numbers exactly once!");
+          setMessage("You must use all given numbers exactly once!");
           return;
         }
 
-        setMessage(`✅ Correct! Solved in ${timeElapsed} seconds!`);
+        setMessage(`Correct! Solved in ${timeElapsed} seconds!`);
         setSolveTime(timeElapsed);
         setSolved(true);
 
@@ -350,56 +396,15 @@ const MakeTen: React.FC = () => {
         localStorage.setItem("solvedToday", "true");
         localStorage.setItem("solvedDate", today);
       } else {
-        setMessage("❌ Incorrect. Try again!");
+        setMessage("Incorrect. Try again!");
       }
     } catch {
-      setMessage("❌ Invalid equation. Please check your input.");
+      setMessage("Invalid equation. Please check your input.");
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p className="loading-text">Loading today&apos;s puzzle...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error-container">
-        <p className="error-text">{error}</p>
-        <button
-          className="key special"
-          onClick={() => window.location.reload()}
-          aria-label="Refresh page"
-        >
-          Refresh Page
-        </button>
-      </div>
-    );
-  }
-
-  if (!puzzle) {
-    return (
-      <div className="error-container">
-        <p className="error-text">
-          Failed to load puzzle. Please refresh the page.
-        </p>
-        <button
-          className="key special"
-          onClick={() => window.location.reload()}
-          aria-label="Refresh page"
-        >
-          Refresh Page
-        </button>
-      </div>
-    );
-  }
-
   const copyToClipboard = async () => {
-    if (!userInput) return;
+    if (!userInput || !solveTime) return;
 
     const maskedSolution = userInput
       .replace(/[0-9]/g, "⬛")
@@ -412,9 +417,8 @@ const MakeTen: React.FC = () => {
       .replace(/\*/g, "*")
       .replace(/\//g, "/");
 
-    const shareText = `🔢 I solved today&apos;s #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
+    const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
 
-    // Check if Web Share API is supported
     if (navigator.share) {
       try {
         await navigator.share({
@@ -428,147 +432,231 @@ const MakeTen: React.FC = () => {
       }
     }
 
-    // Fallback: Copy to clipboard
     if (navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(shareText);
-        alert("✅ Solution copied to clipboard! Share it with friends.");
+        alert("Solution copied to clipboard! Share it with friends.");
       } catch (err) {
         console.error("Clipboard write failed:", err);
-        alert("❌ Unable to copy to clipboard.");
+        alert("Unable to copy to clipboard.");
       }
     } else {
-      alert("❌ Sharing is not supported on your device.");
+      alert("Sharing is not supported on your device.");
     }
   };
 
+  if (isLoading) {
+    return <LoadingOrErrorView />;
+  }
+
+  if (error) {
+    return <LoadingOrErrorView message={error} showRefresh />;
+  }
+
+  if (!puzzle) {
+    return (
+      <LoadingOrErrorView
+        message="Failed to load puzzle. Please refresh the page."
+        showRefresh
+      />
+    );
+  }
+
   return (
-    <div className="container">
-      <h2 className="title">🎯 Make 10 </h2>
-      {!solved && (
-        <p className="instructions">
-          Use only basic operations and all these numbers exactly once to make
-          10:
-        </p>
-      )}
-      {!solved && (
-        <h3 className="numbers" role="status" aria-live="polite">
-          {puzzle.numbers.map((num, index) => (
-            <span
-              key={index}
-              className={usedNumbers[index] ? "greyed-out" : ""}
-              aria-label={`Number ${num}${
-                usedNumbers[index] ? " used" : " available"
-              }`}
-            >
-              {num}{" "}
-            </span>
-          ))}
-        </h3>
-      )}
-      {solved ? (
-        <p className="footer">
-          Come back at {localResetTime} for a new puzzle!
-        </p>
-      ) : (
-        <input
-          type="text"
-          value={userInput}
-          onChange={handleInputChange}
-          className={`input-box ${solved && "disabled"}`}
-          disabled={solved}
-          autoFocus
-          aria-label="Enter your solution"
-          placeholder="Enter your solution"
-        />
-      )}
-      <br />
-      <div className="keyboard" role="group" aria-label="Calculator keyboard">
-        <div
-          className="keyboard-row numbers-row"
-          role="group"
-          aria-label="Number keys"
-        >
-          {numbers.map((num) => (
-            <button
+    <div className="flex flex-col items-center min-h-screen w-screen bg-background">
+      {/* Theme Toggle */}
+      <div className="fixed top-4 right-4">
+        <ModeToggle />
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl px-4 mt-12 lg:mt-20">
+        {/* Title */}
+        <h1 className="text-5xl font-bold mb-8 lg:text-6x lg:mb-12">Make 10</h1>
+        {!solved && (
+          <p className="text-xl text-muted-foreground text-center lg:text-2xl">
+            Use only basic operations and all these numbers exactly once to make
+            10:
+          </p>
+        )}
+
+        {/* Puzzle Numbers */}
+        {!solved && (
+          <div
+            className="text-center text-4xl font-bold space-x-4 my-8 lg:text-5xl"
+            role="status"
+            aria-live="polite"
+          >
+            {puzzle.numbers.map((num: number, index: number) => (
+              <span
+                key={index}
+                className={cn(usedNumbers[index] && "text-muted-foreground")}
+                aria-label={`Number ${num}${
+                  usedNumbers[index] ? " used" : " available"
+                }`}
+              >
+                {num}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Input Field */}
+        {solved ? (
+          <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
+            Come back at {localResetTime} for a new puzzle!
+          </p>
+        ) : (
+          <Input
+            type="text"
+            value={userInput}
+            onChange={handleInputChange}
+            className="text-center text-xl w-full h-12 mb-6 md:text-2xl md:h-14 lg:mb-12"
+            disabled={solved}
+            autoFocus
+            aria-label="Enter your solution"
+            placeholder="Enter your solution"
+          />
+        )}
+      </div>
+
+      {/* Keyboard - Desktop Layout */}
+      <div
+        className="w-full max-w-4xl mx-auto hidden md:flex flex-col items-center justify-center pb-12"
+        role="group"
+        aria-label="Calculator keyboard desktop"
+      >
+        <div className="grid gap-2 w-full max-w-[600px]">
+          <div className="grid grid-cols-10 gap-4">
+            {numbers.map((num) => (
+              <KeyboardButton
+                key={num}
+                disabled={solved || !puzzle.numbers.includes(parseInt(num))}
+                onClick={() => handleKeyboardClick(num)}
+                aria-label={`Number ${num}`}
+                active={puzzle.numbers.includes(parseInt(num))}
+              >
+                {num}
+              </KeyboardButton>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-4">
+            <div className="col-start-2 col-span-5 grid grid-cols-7 gap-4">
+              {operators.map((op) => (
+                <KeyboardButton
+                  key={op}
+                  disabled={solved}
+                  onClick={() => handleKeyboardClick(op)}
+                  aria-label={op === "⌫" ? "Backspace" : `Operator ${op}`}
+                  variant="secondary"
+                >
+                  {op}
+                </KeyboardButton>
+              ))}
+            </div>
+          </div>
+        </div>
+        {!solved && (
+          <Button
+            className="w-full h-14 text-xl max-w-[600px] mt-16"
+            onClick={checkSolution}
+            disabled={solved}
+            aria-label="Submit solution"
+          >
+            ENTER
+          </Button>
+        )}
+      </div>
+
+      {/* Mobile Layout - Sticks to Bottom */}
+      <div
+        className="w-full max-w-sm mx-auto md:hidden p-4"
+        role="group"
+        aria-label="Calculator keyboard mobile"
+      >
+        <div className="grid grid-cols-5 gap-2 auto-rows-fr">
+          {numbers.slice(0, 10).map((num) => (
+            <KeyboardButton
               key={num}
-              className={`key ${
-                solved || !puzzle.numbers.includes(parseInt(num))
-                  ? "disabled"
-                  : ""
-              }`}
               disabled={solved || !puzzle.numbers.includes(parseInt(num))}
               onClick={() => handleKeyboardClick(num)}
               aria-label={`Number ${num}`}
+              active={puzzle.numbers.includes(parseInt(num))}
+              className="w-full"
             >
               {num}
-            </button>
+            </KeyboardButton>
           ))}
         </div>
-        <div
-          className="keyboard-row operators-row"
-          role="group"
-          aria-label="Operator keys"
-        >
-          {operators.map((op) => (
-            <button
+        <div className="grid grid-cols-5 gap-2 mt-2 auto-rows-fr">
+          {[...operators.slice(0, 5), ...operators.slice(5)].map((op) => (
+            <KeyboardButton
               key={op}
               disabled={solved}
-              className={`key ${solved && "disabled"}`}
               onClick={() => handleKeyboardClick(op)}
               aria-label={op === "⌫" ? "Backspace" : `Operator ${op}`}
+              variant="secondary"
+              className="w-full"
             >
               {op}
-            </button>
+            </KeyboardButton>
           ))}
         </div>
         {!solved && (
-          <div className="keyboard-row submit-row">
-            <button
-              className={`key special ${solved && "disabled"}`}
-              onClick={checkSolution}
-              disabled={solved}
-              aria-label="Submit solution"
-            >
-              ENTER
-            </button>
-          </div>
+          <Button
+            className="w-full h-12 mt-8 lg:mt-2"
+            onClick={checkSolution}
+            disabled={solved}
+            aria-label="Submit solution"
+          >
+            ENTER
+          </Button>
         )}
       </div>
-      <br />
-      <br />
-      <br />
+
+      {/* Message & Streaks */}
       {message && (
-        <h3 className="message" role="status" aria-live="polite">
+        <p
+          className="text-center text-xl font-semibold mt-4 lg:text-2xl"
+          role="status"
+          aria-live="polite"
+        >
           {message}
-        </h3>
+        </p>
       )}
-      <h4 className="streak">
-        🔥 Current Streak (under 45 sec): {streaks.streak}
-      </h4>
-      <h4 className="streak">
-        🏆 Longest Streak (under 45 sec): {streaks.longestStreak}
-      </h4>
+
+      <div className="space-y-3 text-center mt-4">
+        <p className="text-lg text-muted-foreground">
+          Current Streak (under 45 sec): {streaks.streak}
+        </p>
+        <p className="text-lg text-muted-foreground">
+          Longest Streak (under 45 sec): {streaks.longestStreak}
+        </p>
+      </div>
+
+      {/* Sharing Options */}
       {solved && (
-        <div className="social-buttons">
-          <a
-            href={SOCIAL_LINKS.twitter}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Share on X"
-          >
-            <button className="social-button twitter">
-              <FaXTwitter className="icon" />
+        <div className="flex justify-center gap-4 mt-6 pb-12">
+          <Button variant="outline" asChild size="lg" className="gap-2">
+            <a
+              href={SOCIAL_LINKS.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Share on X"
+            >
+              <FaXTwitter className="h-5 w-5" />
               Twitter/X
-            </button>
-          </a>
-          <button
+            </a>
+          </Button>
+          <Button
             onClick={copyToClipboard}
-            className="social-button instagram"
+            variant="outline"
+            size="lg"
+            className="gap-2"
             aria-label="Copy solution to clipboard"
           >
             📤 Share
-          </button>
+          </Button>
         </div>
       )}
     </div>
