@@ -331,10 +331,10 @@ const MakeTen: React.FC = () => {
         setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
 
         // Persist in localStorage
-        localStorage.setItem("solvedToday", "true");
-        localStorage.setItem("solvedDate", today);
         localStorage.setItem("streak", newStreak.toString());
         localStorage.setItem("longestStreak", newLongestStreak.toString());
+        localStorage.setItem("solvedToday", "true");
+        localStorage.setItem("solvedDate", today);
       } else {
         setMessage("❌ Incorrect. Try again!");
       }
