@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/app/components/mode-toggle";
+import { Toaster, toast } from "sonner";
 
 const SOCIAL_LINKS = {
   twitter: "https://x.com/MakeTenGame",
@@ -161,7 +162,6 @@ const LoadingOrErrorView: React.FC<{
 const MakeTen: React.FC = () => {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [userInput, setUserInput] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [streaks, setStreaks] = useState({ streak: 0, longestStreak: 0 });
   const [solved, setSolved] = useState<boolean>(false);
@@ -335,7 +335,7 @@ const MakeTen: React.FC = () => {
       // Validate expression before evaluation
       const validation = validateExpression(userInput);
       if (!validation.isValid) {
-        setMessage(`${validation.error}`);
+        toast.error(validation.error);
         return;
       }
 
@@ -344,11 +344,11 @@ const MakeTen: React.FC = () => {
           JSON.stringify(sortedInputNumbers) !==
           JSON.stringify(sortedPuzzleNumbers)
         ) {
-          setMessage("You must use all given numbers exactly once!");
+          toast.error("You must use all given numbers exactly once!");
           return;
         }
 
-        setMessage(`Correct! Solved in ${timeElapsed} seconds!`);
+        toast.success(`Solved in ${timeElapsed} seconds!`);
         setSolveTime(timeElapsed);
         setSolved(true);
 
@@ -396,10 +396,10 @@ const MakeTen: React.FC = () => {
         localStorage.setItem("solvedToday", "true");
         localStorage.setItem("solvedDate", today);
       } else {
-        setMessage("Incorrect. Try again!");
+        toast.error("Incorrect. Try again!");
       }
     } catch {
-      setMessage("Invalid equation. Please check your input.");
+      toast.error("Invalid equation. Please check your input.");
     }
   };
 
@@ -435,13 +435,13 @@ const MakeTen: React.FC = () => {
     if (navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(shareText);
-        alert("Solution copied to clipboard! Share it with friends.");
+        toast.success("Solution copied to clipboard!");
       } catch (err) {
         console.error("Clipboard write failed:", err);
-        alert("Unable to copy to clipboard.");
+        toast.error("Unable to copy to clipboard");
       }
     } else {
-      alert("Sharing is not supported on your device.");
+      toast.error("Sharing is not supported on your device");
     }
   };
 
@@ -464,6 +464,13 @@ const MakeTen: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center min-h-screen w-screen bg-background">
+      <Toaster
+        position="bottom-right"
+        closeButton
+        richColors
+        theme={undefined}
+        className="sm:max-w-[420px]"
+      />
       {/* Theme Toggle */}
       <div className="fixed top-4 right-4">
         <ModeToggle />
@@ -615,16 +622,6 @@ const MakeTen: React.FC = () => {
       </div>
 
       {/* Message & Streaks */}
-      {message && (
-        <p
-          className="text-center text-xl font-semibold mt-4 lg:text-2xl"
-          role="status"
-          aria-live="polite"
-        >
-          {message}
-        </p>
-      )}
-
       <div className="space-y-3 text-center mt-4">
         <p className="text-lg text-muted-foreground">
           Current Streak (under 45 sec): {streaks.streak}
