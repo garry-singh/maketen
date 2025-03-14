@@ -13,6 +13,37 @@ const numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const operators = ["+", "-", "*", "/", "⌫", "(", ")"];
 const validKeys = new Set([...numbers, ...operators, "Enter", "Backspace"]);
 
+// Add validation functions
+const validateExpression = (
+  expr: string
+): { isValid: boolean; error?: string } => {
+  // Check for division by zero
+  if (expr.includes("/0")) {
+    return { isValid: false, error: "Division by zero is not allowed" };
+  }
+
+  // Check for balanced parentheses
+  let parenCount = 0;
+  for (const char of expr) {
+    if (char === "(") parenCount++;
+    if (char === ")") parenCount--;
+    if (parenCount < 0) {
+      return { isValid: false, error: "Unmatched closing parenthesis" };
+    }
+  }
+  if (parenCount !== 0) {
+    return { isValid: false, error: "Unmatched opening parenthesis" };
+  }
+
+  // Check for valid operator sequences
+  const operatorRegex = /[+\-*/]{2,}/;
+  if (operatorRegex.test(expr)) {
+    return { isValid: false, error: "Invalid operator sequence" };
+  }
+
+  return { isValid: true };
+};
+
 interface Puzzle {
   date: string;
   numbers: number[];
@@ -91,23 +122,26 @@ const MakeTen: React.FC = () => {
   const [solveTime, setSolveTime] = useState<number | null>(null);
   const [localResetTime, setLocalResetTime] = useState<string>("");
   const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const generatedPuzzle = generateDailyPuzzle();
     setPuzzle(generatedPuzzle);
-    setUsedNumbers(new Array(generatedPuzzle.numbers.length).fill(0)); // Initialize usage tracker
+    setUsedNumbers(new Array(generatedPuzzle.numbers.length).fill(0));
+    setIsLoading(false);
 
-    const today = new Date().toISOString().split("T")[0]; // Get today's date
+    const today = new Date().toISOString().split("T")[0];
     const savedStartTime = localStorage.getItem("puzzleStartTime");
     const savedPuzzleDate = localStorage.getItem("puzzleDate");
 
     if (savedStartTime && savedPuzzleDate === today) {
-      setStartTime(parseInt(savedStartTime, 10)); // ✅ Restore start time if puzzle hasn't changed
+      setStartTime(parseInt(savedStartTime, 10));
     } else {
       const newStartTime = Date.now();
       setStartTime(newStartTime);
-      localStorage.setItem("puzzleStartTime", newStartTime.toString()); // ✅ Save start time
-      localStorage.setItem("puzzleDate", today); // ✅ Save today's date
+      localStorage.setItem("puzzleStartTime", newStartTime.toString());
+      localStorage.setItem("puzzleDate", today);
     }
   }, []);
 
@@ -243,6 +277,13 @@ const MakeTen: React.FC = () => {
       const sortedInputNumbers = [...inputNumbers].sort((a, b) => a - b);
       const sortedPuzzleNumbers = [...puzzle!.numbers].sort((a, b) => a - b);
 
+      // Validate expression before evaluation
+      const validation = validateExpression(userInput);
+      if (!validation.isValid) {
+        setMessage(`❌ ${validation.error}`);
+        return;
+      }
+
       if (eval(userInput) === 10) {
         if (
           JSON.stringify(sortedInputNumbers) !==
@@ -288,15 +329,28 @@ const MakeTen: React.FC = () => {
       } else {
         setMessage("❌ Incorrect. Try again!");
       }
-    } catch {
-      setMessage(
-        "❌ Invalid equation. Use only the given numbers and operations."
-      );
+    } catch (err) {
+      setMessage("❌ Invalid equation. Please check your input.");
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Loading today's puzzle...</p>
+      </div>
+    );
+  }
+
   if (!puzzle) {
-    return <p className="loading">Loading today&apos;s puzzle...</p>;
+    return (
+      <div className="error-container">
+        <p className="error-text">
+          Failed to load puzzle. Please refresh the page.
+        </p>
+      </div>
+    );
   }
 
   const copyToClipboard = async () => {
@@ -353,11 +407,14 @@ const MakeTen: React.FC = () => {
         </p>
       )}
       {!solved && (
-        <h3 className="numbers">
+        <h3 className="numbers" role="status" aria-live="polite">
           {puzzle.numbers.map((num, index) => (
             <span
               key={index}
               className={usedNumbers[index] ? "greyed-out" : ""}
+              aria-label={`Number ${num}${
+                usedNumbers[index] ? " used" : " available"
+              }`}
             >
               {num}{" "}
             </span>
@@ -376,11 +433,17 @@ const MakeTen: React.FC = () => {
           className={`input-box ${solved && "disabled"}`}
           disabled={solved}
           autoFocus
+          aria-label="Enter your solution"
+          placeholder="Enter your solution"
         />
       )}
       <br />
-      <div className="keyboard">
-        <div className="keyboard-row numbers-row">
+      <div className="keyboard" role="group" aria-label="Calculator keyboard">
+        <div
+          className="keyboard-row numbers-row"
+          role="group"
+          aria-label="Number keys"
+        >
           {numbers.map((num) => (
             <button
               key={num}
@@ -391,18 +454,24 @@ const MakeTen: React.FC = () => {
               }`}
               disabled={solved || !puzzle.numbers.includes(parseInt(num))}
               onClick={() => handleKeyboardClick(num)}
+              aria-label={`Number ${num}`}
             >
               {num}
             </button>
           ))}
         </div>
-        <div className="keyboard-row operators-row">
+        <div
+          className="keyboard-row operators-row"
+          role="group"
+          aria-label="Operator keys"
+        >
           {operators.map((op) => (
             <button
               key={op}
               disabled={solved}
               className={`key ${solved && "disabled"}`}
               onClick={() => handleKeyboardClick(op)}
+              aria-label={op === "⌫" ? "Backspace" : `Operator ${op}`}
             >
               {op}
             </button>
@@ -414,6 +483,7 @@ const MakeTen: React.FC = () => {
               className={`key special ${solved && "disabled"}`}
               onClick={checkSolution}
               disabled={solved}
+              aria-label="Submit solution"
             >
               ENTER
             </button>
@@ -423,7 +493,11 @@ const MakeTen: React.FC = () => {
       <br />
       <br />
       <br />
-      {message && <h3 className="message">{message}</h3>}
+      {message && (
+        <h3 className="message" role="status" aria-live="polite">
+          {message}
+        </h3>
+      )}
       <h4 className="streak">
         🔥 Current Streak (under 45 sec): {streaks.streak}
       </h4>
@@ -436,13 +510,18 @@ const MakeTen: React.FC = () => {
             href={SOCIAL_LINKS.twitter}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="Share on X"
           >
             <button className="social-button twitter">
               <FaXTwitter className="icon" />
               Twitter/X
             </button>
           </a>
-          <button onClick={copyToClipboard} className="social-button instagram">
+          <button
+            onClick={copyToClipboard}
+            className="social-button instagram"
+            aria-label="Copy solution to clipboard"
+          >
             📤 Share
           </button>
         </div>
