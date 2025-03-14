@@ -126,22 +126,31 @@ const MakeTen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const generatedPuzzle = generateDailyPuzzle();
-    setPuzzle(generatedPuzzle);
-    setUsedNumbers(new Array(generatedPuzzle.numbers.length).fill(0));
-    setIsLoading(false);
+    try {
+      const generatedPuzzle = generateDailyPuzzle();
+      setPuzzle(generatedPuzzle);
+      setUsedNumbers(new Array(generatedPuzzle.numbers.length).fill(0));
+      setIsLoading(false);
+      setError(null);
 
-    const today = new Date().toISOString().split("T")[0];
-    const savedStartTime = localStorage.getItem("puzzleStartTime");
-    const savedPuzzleDate = localStorage.getItem("puzzleDate");
+      const today = new Date().toISOString().split("T")[0];
+      const savedStartTime = localStorage.getItem("puzzleStartTime");
+      const savedPuzzleDate = localStorage.getItem("puzzleDate");
 
-    if (savedStartTime && savedPuzzleDate === today) {
-      setStartTime(parseInt(savedStartTime, 10));
-    } else {
-      const newStartTime = Date.now();
-      setStartTime(newStartTime);
-      localStorage.setItem("puzzleStartTime", newStartTime.toString());
-      localStorage.setItem("puzzleDate", today);
+      if (savedStartTime && savedPuzzleDate === today) {
+        setStartTime(parseInt(savedStartTime, 10));
+      } else {
+        const newStartTime = Date.now();
+        setStartTime(newStartTime);
+        localStorage.setItem("puzzleStartTime", newStartTime.toString());
+        localStorage.setItem("puzzleDate", today);
+      }
+    } catch (err) {
+      setError(
+        "Failed to generate today's puzzle. Please try refreshing the page."
+      );
+      setIsLoading(false);
+      console.error("Error generating puzzle:", err);
     }
   }, []);
 
@@ -343,12 +352,34 @@ const MakeTen: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="error-container">
+        <p className="error-text">{error}</p>
+        <button
+          className="key special"
+          onClick={() => window.location.reload()}
+          aria-label="Refresh page"
+        >
+          Refresh Page
+        </button>
+      </div>
+    );
+  }
+
   if (!puzzle) {
     return (
       <div className="error-container">
         <p className="error-text">
           Failed to load puzzle. Please refresh the page.
         </p>
+        <button
+          className="key special"
+          onClick={() => window.location.reload()}
+          aria-label="Refresh page"
+        >
+          Refresh Page
+        </button>
       </div>
     );
   }
