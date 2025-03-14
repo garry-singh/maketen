@@ -338,7 +338,7 @@ const MakeTen: React.FC = () => {
       } else {
         setMessage("❌ Incorrect. Try again!");
       }
-    } catch (err) {
+    } catch {
       setMessage("❌ Invalid equation. Please check your input.");
     }
   };
