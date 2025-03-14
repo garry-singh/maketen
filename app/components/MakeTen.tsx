@@ -347,7 +347,7 @@ const MakeTen: React.FC = () => {
     return (
       <div className="loading-container">
         <div className="loading-spinner"></div>
-        <p className="loading-text">Loading today's puzzle...</p>
+        <p className="loading-text">Loading today&apos;s puzzle...</p>
       </div>
     );
   }
@@ -398,7 +398,7 @@ const MakeTen: React.FC = () => {
       .replace(/\*/g, "*")
       .replace(/\//g, "/");
 
-    const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
+    const shareText = `🔢 I solved today&apos;s #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
 
     // Check if Web Share API is supported
     if (navigator.share) {
