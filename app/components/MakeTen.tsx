@@ -147,7 +147,7 @@ const MakeTen: React.FC = () => {
       }
     } catch (err) {
       setError(
-        "Failed to generate today's puzzle. Please try refreshing the page."
+        "Failed to generate today&apos;s puzzle. Please try refreshing the page."
       );
       setIsLoading(false);
       console.error("Error generating puzzle:", err);
