@@ -12,6 +12,24 @@ export function useSimpleGameState() {
   const [longestStreak, setLongestStreak] = useState(0);
   const [solved, setSolved] = useState(false);
   const [solveTime, setSolveTime] = useState<number | null>(null);
+  const [lastSolution, setLastSolution] = useState<string>("");
+  
+  // Verify localStorage is available and working
+  useEffect(() => {
+    try {
+      // Test basic functionality
+      localStorage.setItem('__test', 'working');
+      const testValue = localStorage.getItem('__test');
+      if (DEBUG_MODE) console.log('localStorage test:', testValue);
+      localStorage.removeItem('__test');
+      
+      // Load initial values
+      loadStateFromStorage();
+    } catch (error) {
+      console.error('localStorage error:', error);
+      // Fallback to memory-only mode if localStorage is unavailable
+    }
+  }, []);
   
   // Load state from localStorage - can be called directly when needed
   const loadStateFromStorage = useCallback(() => {
@@ -24,12 +42,18 @@ export function useSimpleGameState() {
     const savedSolvedDate = localStorage.getItem(STORAGE_KEYS.SOLVED_DATE);
     const savedSolvedToday = localStorage.getItem(STORAGE_KEYS.SOLVED_TODAY) === "true";
     
+    // Get saved solution details
+    const savedSolutionInput = localStorage.getItem(STORAGE_KEYS.SOLUTION_INPUT) || "";
+    const savedSolutionTime = localStorage.getItem(STORAGE_KEYS.SOLUTION_TIME);
+    
     if (DEBUG_MODE) {
       console.log('Loading from storage:', {
         savedStreak,
         savedLongestStreak,
         savedSolvedDate,
         savedSolvedToday,
+        savedSolutionInput,
+        savedSolutionTime,
         today,
         yesterday
       });
@@ -48,44 +72,39 @@ export function useSimpleGameState() {
       setLongestStreak(savedLongestStreak);
     }
     
-    // Check if already solved today
+    // Check if already solved today and restore solution details
     if (savedSolvedToday && savedSolvedDate === today) {
       setSolved(true);
+      
+      // Restore solution details if available
+      if (savedSolutionInput) {
+        setLastSolution(savedSolutionInput);
+      }
+      
+      if (savedSolutionTime) {
+        setSolveTime(parseFloat(savedSolutionTime));
+      }
     } else {
       setSolved(false);
+      setLastSolution("");
+      setSolveTime(null);
     }
   }, []);
-
-  // Verify localStorage is available and working
-  useEffect(() => {
-    try {
-      // Test basic functionality
-      localStorage.setItem('__test', 'working');
-      const testValue = localStorage.getItem('__test');
-      if (DEBUG_MODE) console.log('localStorage test:', testValue);
-      localStorage.removeItem('__test');
-      
-      // Load initial values
-      loadStateFromStorage();
-    } catch (error) {
-      console.error('localStorage error:', error);
-      // Fallback to memory-only mode if localStorage is unavailable
-    }
-  }, [loadStateFromStorage]); // ✅ Added `loadStateFromStorage` as a dependency
   
   // Solve puzzle and update streak
-  const solvePuzzle = (timeElapsed: number): string => {
+  const solvePuzzle = (timeElapsed: number, solutionInput: string): string => {
     if (solved) return ""; // Already solved
     
     const today = getTodayDateString();
     let newStreak = streak;
     let streakMessage = "";
     
-    if (DEBUG_MODE) console.log('Solving puzzle:', { timeElapsed, currentStreak: streak });
+    if (DEBUG_MODE) console.log('Solving puzzle:', { timeElapsed, currentStreak: streak, solutionInput });
     
     // Update solve state
     setSolveTime(timeElapsed);
     setSolved(true);
+    setLastSolution(solutionInput); // Store the solution
     
     // Calculate new streak value
     if (timeElapsed <= STREAK_TIME_LIMIT) {
@@ -121,13 +140,19 @@ export function useSimpleGameState() {
       window.localStorage.setItem(STORAGE_KEYS.SOLVED_TODAY, "true");
       window.localStorage.setItem(STORAGE_KEYS.SOLVED_DATE, today);
       
+      // Store solution details
+      window.localStorage.setItem(STORAGE_KEYS.SOLUTION_INPUT, solutionInput);
+      window.localStorage.setItem(STORAGE_KEYS.SOLUTION_TIME, String(timeElapsed));
+      
       // Verify values were set correctly
       if (DEBUG_MODE) {
         console.log('Verified localStorage values:', {
           streak: localStorage.getItem(STORAGE_KEYS.STREAK),
           longestStreak: localStorage.getItem(STORAGE_KEYS.LONGEST_STREAK),
           solvedToday: localStorage.getItem(STORAGE_KEYS.SOLVED_TODAY),
-          solvedDate: localStorage.getItem(STORAGE_KEYS.SOLVED_DATE)
+          solvedDate: localStorage.getItem(STORAGE_KEYS.SOLVED_DATE),
+          solutionInput: localStorage.getItem(STORAGE_KEYS.SOLUTION_INPUT),
+          solutionTime: localStorage.getItem(STORAGE_KEYS.SOLUTION_TIME)
         });
       }
     } catch (error) {
@@ -160,6 +185,7 @@ export function useSimpleGameState() {
     setLongestStreak(0);
     setSolved(false);
     setSolveTime(null);
+    setLastSolution("");
     
     if (DEBUG_MODE) console.log('Game state reset');
     
@@ -175,6 +201,7 @@ export function useSimpleGameState() {
     streaks: { streak, longestStreak } as Streaks,
     solved,
     solveTime,
+    lastSolution,
     solvePuzzle,
     resetGameState,
     refreshState: loadStateFromStorage

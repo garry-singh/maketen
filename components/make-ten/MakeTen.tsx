@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
@@ -28,12 +28,13 @@ import LocalStorageDebugger from "./LocalStorageDebugger";
 
 /**
  * Main component for the Make Ten game
- * Fixed version with improved localStorage handling
+ * Fixed version with improved localStorage handling and solution persistence
  */
 const MakeTen: React.FC = () => {
   const {
     puzzle,
     userInput,
+    setUserInput,
     usedNumbers,
     isLoading,
     error,
@@ -41,20 +42,51 @@ const MakeTen: React.FC = () => {
     handleInputChange,
   } = usePuzzle();
 
-  // Use simplified game state management
-  const { streaks, solved, solveTime, solvePuzzle } = useSimpleGameState();
+  // Use simplified game state management with lastSolution tracking
+  const {
+    streaks,
+    solved,
+    solveTime,
+    lastSolution,
+    solvePuzzle,
+    resetGameState,
+    refreshState,
+  } = useSimpleGameState();
 
   // Use secure timer to prevent streak farming
   const { getElapsedTime } = useSecureTimer(solved);
 
   // State for reset time display
-  const [localResetTime, setLocalResetTime] = React.useState<string>("");
+  const [localResetTime, setLocalResetTime] = useState<string>("");
 
   // Set up reset time display
-  React.useEffect(() => {
+  useEffect(() => {
     const { formattedString } = getNextPuzzleTime();
     setLocalResetTime(formattedString);
   }, []);
+
+  // Sync userInput with lastSolution when refreshing a solved puzzle
+  useEffect(() => {
+    if (solved && lastSolution && !userInput) {
+      setUserInput(lastSolution);
+      if (DEBUG_MODE)
+        console.log("Restored solution from localStorage:", lastSolution);
+    }
+  }, [solved, lastSolution, userInput, setUserInput]);
+
+  /**
+   * Handle keyboard input with solution checking
+   */
+  const handleKey = (key: string) => {
+    // Check if the key is Enter/ENTER and call checkSolution directly
+    if (key === "Enter" || key === "ENTER") {
+      checkSolution();
+      return;
+    }
+
+    // For all other keys, delegate to the original handler
+    handleKeyboardInput(key, solved);
+  };
 
   /**
    * Validate and check the user's solution
@@ -95,7 +127,8 @@ const MakeTen: React.FC = () => {
       }
 
       // Success! Update streak and get message
-      const streakMessage = solvePuzzle(timeElapsed);
+      // Pass the current solution input to store it
+      const streakMessage = solvePuzzle(timeElapsed, userInput);
 
       // Show success message
       toast.success(
@@ -110,6 +143,20 @@ const MakeTen: React.FC = () => {
       console.error("Solution check error:", err);
       toast.error("Invalid equation. Please check your input.");
     }
+  };
+
+  /**
+   * Reset game for development/testing
+   */
+  const resetGame = () => {
+    // Reset game state (streaks, solved status)
+    resetGameState();
+
+    // Reset user input
+    setUserInput("");
+
+    // Force refresh state
+    refreshState();
   };
 
   // Handle loading and error states
@@ -130,6 +177,10 @@ const MakeTen: React.FC = () => {
     );
   }
 
+  // Determine which solution to use for sharing
+  // Use userInput if available, otherwise fall back to lastSolution
+  const solutionToShare = userInput || lastSolution;
+
   return (
     <div className="flex flex-col items-center min-h-screen w-screen bg-background">
       <Toaster
@@ -144,6 +195,18 @@ const MakeTen: React.FC = () => {
       <div className="fixed top-4 right-4">
         <ModeToggle />
       </div>
+
+      {/* Reset Button - Development Only */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="fixed top-20 right-4 z-50">
+          <button
+            onClick={resetGame}
+            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
+          >
+            Reset Game
+          </button>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl px-4 mt-12 lg:mt-20">
@@ -208,7 +271,7 @@ const MakeTen: React.FC = () => {
               <KeyboardButton
                 key={num}
                 disabled={solved || !puzzle.numbers.includes(parseInt(num))}
-                onClick={() => handleKeyboardInput(num, solved)}
+                onClick={() => handleKey(num)}
                 aria-label={`Number ${num}`}
                 active={puzzle.numbers.includes(parseInt(num))}
               >
@@ -222,7 +285,7 @@ const MakeTen: React.FC = () => {
                 <KeyboardButton
                   key={op}
                   disabled={solved}
-                  onClick={() => handleKeyboardInput(op, solved)}
+                  onClick={() => handleKey(op)}
                   aria-label={op === "⌫" ? "Backspace" : `Operator ${op}`}
                   variant="secondary"
                 >
@@ -255,7 +318,7 @@ const MakeTen: React.FC = () => {
             <KeyboardButton
               key={num}
               disabled={solved || !puzzle.numbers.includes(parseInt(num))}
-              onClick={() => handleKeyboardInput(num, solved)}
+              onClick={() => handleKey(num)}
               aria-label={`Number ${num}`}
               active={puzzle.numbers.includes(parseInt(num))}
               className="w-full"
@@ -269,7 +332,7 @@ const MakeTen: React.FC = () => {
             <KeyboardButton
               key={op}
               disabled={solved}
-              onClick={() => handleKeyboardInput(op, solved)}
+              onClick={() => handleKey(op)}
               aria-label={op === "⌫" ? "Backspace" : `Operator ${op}`}
               variant="secondary"
               className="w-full"
@@ -300,10 +363,10 @@ const MakeTen: React.FC = () => {
         </p>
       </div>
 
-      {/* Sharing Options */}
+      {/* Sharing Options - Pass the correct solution */}
       {solved && (
         <ShareOptions
-          userInput={userInput}
+          userInput={solutionToShare}
           solveTime={solveTime}
           streaks={streaks}
         />

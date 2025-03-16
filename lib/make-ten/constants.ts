@@ -17,7 +17,10 @@ export const SOCIAL_LINKS = {
     SOLVED_DATE: "solvedDate",
     PUZZLE_START_TIME: "puzzleStartTime",
     PUZZLE_DATE: "puzzleDate",
-    FIRST_LOAD_TIME: "firstLoadTime"
+    FIRST_LOAD_TIME: "firstLoadTime",
+    // New keys for storing solution details
+    SOLUTION_INPUT: "solutionInput",
+    SOLUTION_TIME: "solutionTime"
   };
   
   // Console logging flag - turn off in production
