@@ -453,44 +453,63 @@ const MakeTen: React.FC = () => {
   const copyToClipboard = async () => {
     if (!userInput || !solveTime) return;
 
+    const formattedTime = solveTime.toFixed(2);
+    const streakText =
+      streaks.streak > 0 ? `\n🔥 ${streaks.streak} day streak!` : "";
+
     const maskedSolution = userInput
       .replace(/[0-9]/g, "⬛")
-      .replace(/\(/g, "⬜")
-      .replace(/\)/g, "⬜");
+      .replace(/[\(\)]/g, "⬜");
 
     const coloredOperators = maskedSolution
-      .replace(/\+/g, "+")
-      .replace(/-/g, "-")
-      .replace(/\*/g, "*")
-      .replace(/\//g, "/");
+      .replace(/[+]/g, "➕")
+      .replace(/[-]/g, "➖")
+      .replace(/[*]/g, "✖️")
+      .replace(/[/]/g, "➗");
 
-    const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime.toFixed(
-      2
-    )} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
+    const shareText = `Make 10 Puzzle\n⏱️ ${formattedTime}s${streakText}\n\n${coloredOperators}\n\n Play now: https://maketen.vercel.app/`;
 
+    // Try Web Share API first
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Make 10 Puzzle",
+          title: "Make 10",
           text: shareText,
-          url: "https://maketen.vercel.app/",
         });
+        toast.success("Shared successfully!");
         return;
       } catch (err) {
-        console.error("Error sharing via Web Share API:", err);
+        // If user cancelled sharing, don't show error
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+        // Fall back to clipboard
+        console.warn("Web Share API failed:", err);
       }
     }
 
-    if (navigator.clipboard) {
+    // Fallback to clipboard
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success("Copied to clipboard! Ready to share!");
+    } catch (err) {
+      console.error("Clipboard write failed:", err);
+
+      // Final fallback - create temporary textarea
       try {
-        await navigator.clipboard.writeText(shareText);
-        toast.success("Solution copied to clipboard!");
-      } catch (err) {
-        console.error("Clipboard write failed:", err);
-        toast.error("Unable to copy to clipboard");
+        const textarea = document.createElement("textarea");
+        textarea.value = shareText;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        toast.success("Copied to clipboard! Ready to share!");
+      } catch (finalErr) {
+        console.error("All sharing methods failed:", finalErr);
+        toast.error("Unable to share. Please try again.");
       }
-    } else {
-      toast.error("Sharing is not supported on your device");
     }
   };
 
