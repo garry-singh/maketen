@@ -182,18 +182,22 @@ const MakeTen: React.FC = () => {
       const today = new Date().toISOString().split("T")[0];
       const savedStartTime = localStorage.getItem("puzzleStartTime");
       const savedPuzzleDate = localStorage.getItem("puzzleDate");
+      const savedSolved = localStorage.getItem("solvedToday") === "true";
 
-      if (savedStartTime && savedPuzzleDate === today) {
-        setStartTime(parseInt(savedStartTime, 10));
-      } else {
+      // Only set start time if:
+      // 1. We don't have a saved start time for today, AND
+      // 2. The puzzle hasn't been solved yet
+      if ((!savedStartTime || savedPuzzleDate !== today) && !savedSolved) {
         const newStartTime = Date.now();
         setStartTime(newStartTime);
         localStorage.setItem("puzzleStartTime", newStartTime.toString());
         localStorage.setItem("puzzleDate", today);
+      } else if (savedStartTime) {
+        setStartTime(parseInt(savedStartTime, 10));
       }
     } catch (err) {
       setError(
-        "Failed to generate today&apos;s puzzle. Please try refreshing the page."
+        "Failed to generate today's puzzle. Please try refreshing the page."
       );
       setIsLoading(false);
       console.error("Error generating puzzle:", err);
@@ -271,14 +275,24 @@ const MakeTen: React.FC = () => {
   }, []);
 
   const handleKeyboardClick = (key: string) => {
+    if (solved) return;
+
     if (key === "ENTER") {
       checkSolution();
       return;
     } else if (key === "⌫" || key === "Backspace") {
+      if (userInput.length === 0) {
+        toast.info("Nothing to delete!");
+        return;
+      }
       removeLastUsedNumber();
       setUserInput((prev) => prev.slice(0, -1));
       return;
     } else if (validKeys.has(key)) {
+      if (key.match(/\d/) && !puzzle?.numbers.includes(parseInt(key))) {
+        toast.error("That number isn't available!");
+        return;
+      }
       setUserInput((prev) => prev + key);
       markNumberUsed(parseInt(key)); // Track number usage
     }
@@ -324,10 +338,22 @@ const MakeTen: React.FC = () => {
   const checkSolution = () => {
     if (solved) return;
 
+    if (!userInput) {
+      toast.error("Please enter a solution first!");
+      return;
+    }
+
     try {
+      const savedStartTime = localStorage.getItem("puzzleStartTime");
+      // Use the saved start time to prevent timer manipulation through refreshes
       const timeElapsed = parseFloat(
-        ((Date.now() - startTime) / 1000).toFixed(3)
+        (
+          (Date.now() -
+            (savedStartTime ? parseInt(savedStartTime, 10) : startTime)) /
+          1000
+        ).toFixed(3)
       );
+
       const inputNumbers = userInput.match(/\d+/g)?.map(Number) || [];
       const sortedInputNumbers = [...inputNumbers].sort((a, b) => a - b);
       const sortedPuzzleNumbers = [...puzzle!.numbers].sort((a, b) => a - b);
@@ -348,7 +374,14 @@ const MakeTen: React.FC = () => {
           return;
         }
 
-        toast.success(`Solved in ${timeElapsed} seconds!`);
+        const streakMessage =
+          timeElapsed <= 45
+            ? "🎯 Keep going for a streak!"
+            : "Try solving faster next time for a streak!";
+
+        toast.success(
+          `Solved in ${timeElapsed.toFixed(1)} seconds! ${streakMessage}`
+        );
         setSolveTime(timeElapsed);
         setSolved(true);
 
@@ -370,24 +403,32 @@ const MakeTen: React.FC = () => {
             if (lastSolvedDate === yesterdayStr) {
               // Continue the streak
               newStreak = currentStreak + 1;
-              toast.success(`🔥 Streak increased to ${newStreak}!`);
+              if (newStreak > currentLongestStreak) {
+                toast.success(`🏆 New record! ${newStreak} day streak!`);
+              } else {
+                toast.success(`🔥 ${newStreak} day streak!`);
+              }
             } else if (lastSolvedDate === today) {
               // Already solved today, keep current streak
               newStreak = currentStreak;
             } else {
               // Streak broken
               newStreak = 1;
-              toast.success("🎯 New streak started!");
+              toast.success(
+                "🎯 New streak started! Come back tomorrow to continue!"
+              );
             }
           } else {
             // First time solving
             newStreak = 1;
-            toast.success("🎯 First streak started!");
+            toast.success(
+              "🎯 First streak started! Come back tomorrow to continue!"
+            );
           }
         } else {
           // Solved but too slow, reset streak
           newStreak = 0;
-          toast.info("Solve within 45 seconds to maintain your streak!");
+          toast.info("⏱️ Solve within 45 seconds to maintain your streak!");
         }
 
         // Update longest streak if current streak is higher
@@ -423,7 +464,9 @@ const MakeTen: React.FC = () => {
       .replace(/\*/g, "*")
       .replace(/\//g, "/");
 
-    const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
+    const shareText = `🔢 I solved today's #MakeTen puzzle in ${solveTime.toFixed(
+      2
+    )} seconds!\n\n${coloredOperators}\n\n🎯 Play now: https://maketen.vercel.app/`;
 
     if (navigator.share) {
       try {
