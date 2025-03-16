@@ -34,7 +34,6 @@ const MakeTen: React.FC = () => {
   const {
     puzzle,
     userInput,
-    setUserInput,
     usedNumbers,
     isLoading,
     error,
@@ -43,8 +42,7 @@ const MakeTen: React.FC = () => {
   } = usePuzzle();
 
   // Use simplified game state management
-  const { streaks, solved, solveTime, solvePuzzle, resetGameState } =
-    useSimpleGameState();
+  const { streaks, solved, solveTime, solvePuzzle } = useSimpleGameState();
 
   // Use secure timer to prevent streak farming
   const { getElapsedTime } = useSecureTimer(solved);
