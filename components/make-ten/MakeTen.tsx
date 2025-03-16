@@ -25,6 +25,7 @@ import KeyboardButton from "./KeyboardButton";
 import LoadingErrorView from "./LoadingErrorView";
 import ShareOptions from "./ShareOptions";
 import LocalStorageDebugger from "./LocalStorageDebugger";
+import InfoDialog from "./InfoDialog";
 
 /**
  * Main component for the Make Ten game
@@ -191,8 +192,9 @@ const MakeTen: React.FC = () => {
         className="sm:max-w-[420px]"
       />
 
-      {/* Theme Toggle */}
-      <div className="fixed top-4 right-4">
+      {/* Theme Toggle and Info */}
+      <div className="fixed top-4 right-4 flex items-center gap-2">
+        <InfoDialog />
         <ModeToggle />
       </div>
 
