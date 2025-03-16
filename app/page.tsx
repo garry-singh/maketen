@@ -1,4 +1,4 @@
-import MakeTen from "./components/MakeTen";
+import MakeTen from "@/components/make-ten/MakeTen";
 
 export default function Home() {
   return <MakeTen />;
