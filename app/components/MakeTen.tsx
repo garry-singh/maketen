@@ -359,33 +359,39 @@ const MakeTen: React.FC = () => {
         const currentLongestStreak =
           parseInt(localStorage.getItem("longestStreak") || "0", 10) || 0;
 
-        // Calculate new streak
-        let newStreak = 1;
-        if (lastSolvedDate) {
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split("T")[0];
+        // Only update streak if solved within 45 seconds
+        let newStreak = currentStreak;
+        if (timeElapsed <= 45) {
+          if (lastSolvedDate) {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split("T")[0];
 
-          if (lastSolvedDate === yesterdayStr) {
-            newStreak = currentStreak + 1;
-            console.log(`Streak incremented: ${currentStreak} -> ${newStreak}`);
+            if (lastSolvedDate === yesterdayStr) {
+              // Continue the streak
+              newStreak = currentStreak + 1;
+              toast.success(`🔥 Streak increased to ${newStreak}!`);
+            } else if (lastSolvedDate === today) {
+              // Already solved today, keep current streak
+              newStreak = currentStreak;
+            } else {
+              // Streak broken
+              newStreak = 1;
+              toast.success("🎯 New streak started!");
+            }
           } else {
-            newStreak = 1; // Reset streak if more than one day was missed
-            console.log(
-              `Streak reset: missed a day. Last solved: ${lastSolvedDate}`
-            );
+            // First time solving
+            newStreak = 1;
+            toast.success("🎯 First streak started!");
           }
         } else {
-          console.log(`First solve ever! Starting streak at 1`);
+          // Solved but too slow, reset streak
+          newStreak = 0;
+          toast.info("Solve within 45 seconds to maintain your streak!");
         }
 
         // Update longest streak if current streak is higher
         const newLongestStreak = Math.max(newStreak, currentLongestStreak);
-        if (newStreak >= currentLongestStreak) {
-          console.log(
-            `Longest streak updated: ${currentLongestStreak} -> ${newLongestStreak}`
-          );
-        }
 
         // Update React state
         setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
