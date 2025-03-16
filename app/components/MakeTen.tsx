@@ -234,17 +234,26 @@ const MakeTen: React.FC = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedStreak =
-        parseInt(localStorage.getItem("streak") || "0", 10) || 0;
-      const savedLongestStreak =
-        parseInt(localStorage.getItem("longestStreak") || "0", 10) || 0;
+      const savedStreak = parseInt(localStorage.getItem("streak") || "0", 10);
+      const savedLongestStreak = parseInt(
+        localStorage.getItem("longestStreak") || "0",
+        10
+      );
       const savedSolved = localStorage.getItem("solvedToday") === "true";
       const lastSolvedDate = localStorage.getItem("solvedDate");
       const today = new Date().toISOString().split("T")[0];
 
-      // Only reset solved status if it's a new day
-      if (lastSolvedDate !== today) {
-        localStorage.setItem("solvedToday", "false");
+      // Check if we missed a day and should reset the streak
+      if (lastSolvedDate) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+        if (lastSolvedDate !== today && lastSolvedDate !== yesterdayStr) {
+          // Reset streak if we missed a day
+          localStorage.setItem("streak", "0");
+          setStreaks((prev) => ({ ...prev, streak: 0 }));
+        }
       }
 
       // Initialize streaks from storage
@@ -345,7 +354,6 @@ const MakeTen: React.FC = () => {
 
     try {
       const savedStartTime = localStorage.getItem("puzzleStartTime");
-      // Use the saved start time to prevent timer manipulation through refreshes
       const timeElapsed = parseFloat(
         (
           (Date.now() -
@@ -374,70 +382,65 @@ const MakeTen: React.FC = () => {
           return;
         }
 
-        const streakMessage =
-          timeElapsed <= 45
-            ? "🎯 Keep going for a streak!"
-            : "Try solving faster next time for a streak!";
-
-        toast.success(
-          `Solved in ${timeElapsed.toFixed(1)} seconds! ${streakMessage}`
-        );
         setSolveTime(timeElapsed);
         setSolved(true);
 
         const today = new Date().toISOString().split("T")[0];
         const lastSolvedDate = localStorage.getItem("solvedDate");
-        const currentStreak =
-          parseInt(localStorage.getItem("streak") || "0", 10) || 0;
-        const currentLongestStreak =
-          parseInt(localStorage.getItem("longestStreak") || "0", 10) || 0;
+        const currentStreak = parseInt(
+          localStorage.getItem("streak") || "0",
+          10
+        );
+        const currentLongestStreak = parseInt(
+          localStorage.getItem("longestStreak") || "0",
+          10
+        );
 
-        // Only update streak if solved within 45 seconds
         let newStreak = currentStreak;
+        let streakMessage = "";
+
+        // Handle streak logic
         if (timeElapsed <= 45) {
-          if (lastSolvedDate) {
+          if (!lastSolvedDate) {
+            // First time ever solving
+            newStreak = 1;
+            streakMessage =
+              "🎯 First streak started! Come back tomorrow to continue!";
+          } else {
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toISOString().split("T")[0];
 
             if (lastSolvedDate === yesterdayStr) {
-              // Continue the streak
+              // Continuing streak
               newStreak = currentStreak + 1;
-              if (newStreak > currentLongestStreak) {
-                toast.success(`🏆 New record! ${newStreak} day streak!`);
-              } else {
-                toast.success(`🔥 ${newStreak} day streak!`);
-              }
-            } else if (lastSolvedDate === today) {
-              // Already solved today, keep current streak
-              newStreak = currentStreak;
-            } else {
-              // Streak broken
+              streakMessage =
+                newStreak > currentLongestStreak
+                  ? `🏆 New record! ${newStreak} day streak!`
+                  : `🔥 ${newStreak} day streak!`;
+            } else if (lastSolvedDate !== today) {
+              // Missed a day - new streak
               newStreak = 1;
-              toast.success(
-                "🎯 New streak started! Come back tomorrow to continue!"
-              );
+              streakMessage =
+                "🎯 New streak started! Come back tomorrow to continue!";
             }
-          } else {
-            // First time solving
-            newStreak = 1;
-            toast.success(
-              "🎯 First streak started! Come back tomorrow to continue!"
-            );
           }
         } else {
-          // Solved but too slow, reset streak
+          // Too slow - reset streak
           newStreak = 0;
-          toast.info("⏱️ Solve within 45 seconds to maintain your streak!");
+          streakMessage = "⏱️ Solve within 45 seconds to maintain your streak!";
         }
 
-        // Update longest streak if current streak is higher
+        // Update longest streak
         const newLongestStreak = Math.max(newStreak, currentLongestStreak);
 
-        // Update React state
-        setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
+        // Show solve message
+        toast.success(
+          `Solved in ${timeElapsed.toFixed(1)} seconds! ${streakMessage}`
+        );
 
-        // Persist in localStorage
+        // Update state and localStorage
+        setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
         localStorage.setItem("streak", newStreak.toString());
         localStorage.setItem("longestStreak", newLongestStreak.toString());
         localStorage.setItem("solvedToday", "true");
