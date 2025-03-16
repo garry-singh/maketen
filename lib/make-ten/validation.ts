@@ -72,7 +72,7 @@ export const validateResult = (
       return { isValid: true };
     }
     return { isValid: false, error: "Incorrect. Try again!" };
-  } catch (error) {
+  } catch {
     return { isValid: false, error: "Invalid equation. Please check your input." };
   }
 };
