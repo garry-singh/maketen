@@ -43,8 +43,8 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
       .replace(/[*]/g, "✖️")
       .replace(/[/]/g, "➗");
 
-    // Build share text with conditional streak part
-    const shareText = `I solved today's Make 10 in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
+    // Build share text with conditional streak part and hashtag
+    const shareText = `I solved today's #Make10 in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
       streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
     }\n\nPlay now: https://maketen.vercel.app/`;
 
