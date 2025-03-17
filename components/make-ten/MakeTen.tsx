@@ -232,7 +232,9 @@ const MakeTen: React.FC = () => {
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl px-4 mt-12 lg:mt-20">
         {/* Title */}
-        <h1 className="text-5xl font-bold mb-8 lg:text-6x lg:mb-12">Make 10</h1>
+        <h1 className="text-4xl font-bold mb-6 lg:text-6xl lg:mb-12">
+          Make 10
+        </h1>
         {!solved && (
           <p className="text-xl text-muted-foreground text-center lg:text-2xl">
             Use only basic operations and all these numbers exactly once to make
@@ -243,7 +245,7 @@ const MakeTen: React.FC = () => {
         {/* Puzzle Numbers */}
         {!solved && (
           <div
-            className="text-center text-4xl font-bold space-x-4 my-8 lg:text-5xl"
+            className="text-center text-4xl font-bold space-x-4 my-6 lg:text-5xl lg:my-8"
             role="status"
             aria-live="polite"
           >
