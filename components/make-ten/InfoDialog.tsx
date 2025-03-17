@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -8,10 +9,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { FaCircleInfo } from "react-icons/fa6";
+import { useState } from "react";
 
 const InfoDialog = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Handle dialog state changes
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"
@@ -22,7 +31,11 @@ const InfoDialog = () => {
           <FaCircleInfo className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className="sm:max-w-[425px]"
+        onPointerDownOutside={(e) => e.preventDefault()} // Prevent accidental closes
+        onEscapeKeyDown={() => setIsOpen(false)}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl">How to Play Make 10</DialogTitle>
         </DialogHeader>
@@ -57,6 +70,16 @@ const InfoDialog = () => {
               streak!
             </div>
           </section>
+
+          <DialogClose asChild>
+            <Button
+              className="w-full mt-4"
+              variant="secondary"
+              onClick={() => setIsOpen(false)}
+            >
+              Got it!
+            </Button>
+          </DialogClose>
         </div>
       </DialogContent>
     </Dialog>

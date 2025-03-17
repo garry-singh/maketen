@@ -26,6 +26,11 @@ import LoadingErrorView from "./LoadingErrorView";
 import ShareOptions from "./ShareOptions";
 import LocalStorageDebugger from "./LocalStorageDebugger";
 import InfoDialog from "./InfoDialog";
+import {
+  checkRateLimit,
+  validateInput,
+  manageStorageQuota,
+} from "@/lib/make-ten/security";
 
 /**
  * Main component for the Make Ten game
@@ -100,6 +105,18 @@ const MakeTen: React.FC = () => {
       return;
     }
 
+    // Check rate limiting
+    if (!checkRateLimit()) {
+      toast.error("Too many attempts. Please wait a minute.");
+      return;
+    }
+
+    // Validate input format
+    if (!validateInput(userInput)) {
+      toast.error("Invalid input format.");
+      return;
+    }
+
     try {
       // Get elapsed time
       const timeElapsed = getElapsedTime();
@@ -128,13 +145,15 @@ const MakeTen: React.FC = () => {
       }
 
       // Success! Update streak and get message
-      // Pass the current solution input to store it
       const streakMessage = solvePuzzle(timeElapsed, userInput);
 
       // Show success message
       toast.success(
         `Solved in ${timeElapsed.toFixed(1)} seconds! ${streakMessage}`
       );
+
+      // Manage storage quota after successful solve
+      manageStorageQuota().catch(console.error);
 
       if (DEBUG_MODE) {
         // Force local storage debugger update

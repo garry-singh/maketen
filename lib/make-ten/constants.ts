@@ -25,3 +25,11 @@ export const SOCIAL_LINKS = {
   
   // Console logging flag - turn off in production
   export const DEBUG_MODE = process.env.NODE_ENV === 'development';
+
+  // Security constants
+  export const SECURITY = {
+    MAX_INPUT_LENGTH: 50,
+    RATE_LIMIT_ATTEMPTS: 10,
+    RATE_LIMIT_WINDOW: 60000, // 1 minute in milliseconds
+    STORAGE_VERSION: '1.0.0',
+  } as const;

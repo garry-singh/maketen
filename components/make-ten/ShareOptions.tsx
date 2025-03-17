@@ -31,8 +31,7 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
     }
 
     const formattedTime = solveTime.toFixed(2);
-    const streakText =
-      streaks.streak > 0 ? `\n🔥 ${streaks.streak} day streak!` : "";
+    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
 
     const maskedSolution = userInput
       .replace(/[0-9]/g, "⬛")
@@ -44,7 +43,10 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
       .replace(/[*]/g, "✖️")
       .replace(/[/]/g, "➗");
 
-    const shareText = `Make 10 Puzzle\n\n⏱️ ${formattedTime}s${streakText}\n\n${coloredOperators}\n\n Play now: https://maketen.vercel.app/`;
+    // Build share text with conditional streak part
+    const shareText = `I solved today's Make 10 in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
+      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
+    }\n\nPlay now: https://maketen.vercel.app/`;
 
     if (DEBUG_MODE) console.log("Sharing text:", shareText);
 
