@@ -44,15 +44,8 @@ const MakeTen: React.FC = () => {
   } = usePuzzle();
 
   // Use simplified game state management with lastSolution tracking
-  const {
-    streaks,
-    solved,
-    solveTime,
-    lastSolution,
-    solvePuzzle,
-    resetGameState,
-    refreshState,
-  } = useSimpleGameState();
+  const { streaks, solved, solveTime, lastSolution, solvePuzzle } =
+    useSimpleGameState();
 
   // Use secure timer to prevent streak farming
   const { getElapsedTime } = useSecureTimer(solved);
@@ -160,20 +153,6 @@ const MakeTen: React.FC = () => {
     }
   };
 
-  /**
-   * Reset game for development/testing
-   */
-  const resetGame = () => {
-    // Reset game state (streaks, solved status)
-    resetGameState();
-
-    // Reset user input
-    setUserInput("");
-
-    // Force refresh state
-    refreshState();
-  };
-
   const getShareText = () => {
     if (!userInput || !solveTime) return "";
 
@@ -232,18 +211,6 @@ const MakeTen: React.FC = () => {
         <InfoDialog />
         <ModeToggle />
       </div>
-
-      {/* Reset Button - Development Only */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="fixed top-20 right-4 z-50">
-          <button
-            onClick={resetGame}
-            className="bg-red-500 text-white px-4 py-2 rounded text-sm"
-          >
-            Reset Game
-          </button>
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="flex flex-col items-center justify-center w-full max-w-4xl px-4 mt-12 lg:mt-20">
