@@ -1,4 +1,4 @@
-import { SECURITY, STORAGE_KEYS } from "./constants";
+import { SECURITY, STORAGE_KEYS } from "../constants";
 
 /**
  * Simple encryption for localStorage values

@@ -37,12 +37,12 @@ const InfoDialog = () => {
         onEscapeKeyDown={() => setIsOpen(false)}
       >
         <DialogHeader>
-          <DialogTitle className="text-2xl">How to Play Make 10</DialogTitle>
+          <DialogTitle className="text-2xl">How to Play Make X</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <DialogDescription>
             Use all the given numbers exactly once to create an expression that
-            equals 10.
+            equals the target number.
           </DialogDescription>
 
           <section>
@@ -51,21 +51,30 @@ const InfoDialog = () => {
               <li>Use each number exactly once</li>
               <li>Use basic operators: +, -, *, /</li>
               <li>Use parentheses to control order of operations</li>
+              <li>
+                You can drag and drop items or click them to add them to your
+                expression.
+              </li>
+              <li>
+                Click the × button on any item to remove it from your
+                expression.
+              </li>
             </ul>
           </section>
 
           <section>
             <h3 className="font-semibold mb-2">Example:</h3>
             <div className="space-y-1">
-              <div>Numbers: 2, 3, 4, 5</div>
-              <div>Solution: (4 * 2) + 5 - 3 = 10</div>
+              <div>Numbers: 100, 2, 8, 50, 6, 5</div>
+              <div>Target: 100</div>
+              <div>Solution: 100(8-5) - 50(6-2)</div>
             </div>
           </section>
 
           <section>
             <h3 className="font-semibold mb-2">Streaks:</h3>
             <div>
-              Solve consecutive daily puzzles within 45 seconds to build your
+              Solve consecutive daily puzzles within 3 minutes to build your
               streak!
             </div>
           </section>

@@ -1,4 +1,4 @@
-import { ValidationResult } from "./types";
+import { ValidationResult } from "../types";
 
 /**
  * Validates a mathematical expression

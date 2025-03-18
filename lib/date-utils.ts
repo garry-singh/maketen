@@ -1,3 +1,35 @@
+export function getUTCDate(): Date {
+  const today = new Date();
+  return new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  );
+}
+
+export function getDateSeed(): number {
+  return getUTCDate().getTime();
+}
+
+export function getIndexFromSeed(seed: number, length: number): number {
+  return seed % length;
+}
+
+export function isSameDay(date1: Date, date2: Date): boolean {
+  return (
+    date1.getUTCFullYear() === date2.getUTCFullYear() &&
+    date1.getUTCMonth() === date2.getUTCMonth() &&
+    date1.getUTCDate() === date2.getUTCDate()
+  );
+}
+
+export function getTimeSinceMidnight(date: Date): number {
+  return (
+    date.getUTCHours() * 3600000 +
+    date.getUTCMinutes() * 60000 +
+    date.getUTCSeconds() * 1000 +
+    date.getUTCMilliseconds()
+  );
+}
+
 /**
  * Gets today's date in ISO format (YYYY-MM-DD)
  * @returns Today's date string

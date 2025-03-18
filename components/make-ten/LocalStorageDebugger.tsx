@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { STORAGE_KEYS, DEBUG_MODE } from "@/lib/make-ten/constants";
-import {
-  getTodayDateString,
-  getYesterdayDateString,
-} from "@/lib/make-ten/date-utils";
+import { STORAGE_KEYS, DEBUG_MODE } from "@/lib/constants";
+import { getTodayDateString, getYesterdayDateString } from "@/lib/date-utils";
 
 interface DebuggerProps {
   className?: string;

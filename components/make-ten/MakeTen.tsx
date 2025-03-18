@@ -6,26 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/app/components/mode-toggle";
-import {
-  NUMBERS,
-  OPERATORS,
-  TARGET_NUMBER,
-  DEBUG_MODE,
-} from "@/lib/make-ten/constants";
+import { NUMBERS, OPERATORS, TARGET_NUMBER, DEBUG_MODE } from "@/lib/constants";
 import { usePuzzle } from "@/lib/make-ten/use-puzzle";
 import { useSimpleGameState } from "@/lib/make-ten/use-simple-game-state";
 import { useSecureTimer } from "@/lib/make-ten/use-secure-timer";
-import { getNextPuzzleTime } from "@/lib/make-ten/date-utils";
+import { getNextPuzzleTime } from "@/lib/date-utils";
 import {
   validateExpression,
   validateNumbersUsed,
   validateResult,
 } from "@/lib/make-ten/validation";
 import KeyboardButton from "./KeyboardButton";
-import LoadingErrorView from "./LoadingErrorView";
-import ShareOptions from "./ShareOptions";
-import LocalStorageDebugger from "./LocalStorageDebugger";
-import InfoDialog from "./InfoDialog";
+import LoadingErrorView from "@/components/LoadingErrorView";
+import ShareOptions from "@/components/ShareOptions";
+import LocalStorageDebugger from "@/components/make-ten/LocalStorageDebugger";
+import InfoDialog from "@/components/make-ten/InfoDialog";
 import {
   checkRateLimit,
   validateInput,
@@ -177,6 +172,27 @@ const MakeTen: React.FC = () => {
 
     // Force refresh state
     refreshState();
+  };
+
+  const getShareText = () => {
+    if (!userInput || !solveTime) return "";
+
+    const formattedTime = solveTime.toFixed(2);
+    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
+
+    const maskedSolution = userInput
+      .replace(/[0-9]/g, "⬛")
+      .replace(/[\(\)]/g, "⬜");
+
+    const coloredOperators = maskedSolution
+      .replace(/[+]/g, "➕")
+      .replace(/[-]/g, "➖")
+      .replace(/[*]/g, "✖️")
+      .replace(/[/]/g, "➗");
+
+    return `I solved today's #Make10 in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
+      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
+    }\n\nPlay now: https://maketen.vercel.app/`;
   };
 
   // Handle loading and error states
@@ -387,11 +403,12 @@ const MakeTen: React.FC = () => {
       </div>
 
       {/* Sharing Options - Pass the correct solution */}
-      {solved && (
+      {solved && solveTime && (
         <ShareOptions
           userInput={solutionToShare}
           solveTime={solveTime}
           streaks={streaks}
+          shareText={getShareText()}
         />
       )}
 

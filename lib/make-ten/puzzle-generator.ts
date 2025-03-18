@@ -1,6 +1,6 @@
-import { Puzzle } from "./types";
+import { MakeTenPuzzle } from "../types";
 import { predefinedPuzzles } from "../../app/makeTenPuzzles";
-import { getTodayDateString } from "./date-utils";
+import { getTodayDateString } from "../date-utils";
 
 /**
  * Permutes an array of numbers
@@ -67,7 +67,7 @@ function attemptGeneratePuzzle(
  * Generates a daily puzzle based on the current date
  * @returns A puzzle object
  */
-export const generateDailyPuzzle = (): Puzzle => {
+export const generateDailyPuzzle = (): MakeTenPuzzle => {
   const today = getTodayDateString();
   const seed = parseInt(today.replace(/-/g, ""));
   let puzzle = attemptGeneratePuzzle(seed);
@@ -80,5 +80,5 @@ export const generateDailyPuzzle = (): Puzzle => {
     };
   }
 
-  return { date: today, ...puzzle };
+  return { ...puzzle, date: today };
 };

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Streaks } from "../types";
-import { STORAGE_KEYS, STREAK_TIME_LIMIT } from "../constants";
+import { STREAK_TIME_LIMIT_MAKE_X } from "../constants";
 import { getTodayDateString, getYesterdayDateString } from "../date-utils";
+import { MAKE_X_STORAGE_KEYS } from "../constants";
 
 /**
- * Custom hook to manage streak logic
+ * Custom hook to manage streak logic for MakeX
  * @returns Object containing streak state and functions
  */
 export const useStreak = () => {
@@ -20,13 +21,13 @@ export const useStreak = () => {
     const yesterday = getYesterdayDateString();
     
     // Load all values from localStorage
-    const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK) || "0", 10);
+    const savedStreak = parseInt(localStorage.getItem(MAKE_X_STORAGE_KEYS.STREAK) || "0", 10);
     const savedLongestStreak = parseInt(
-      localStorage.getItem(STORAGE_KEYS.LONGEST_STREAK) || "0",
+      localStorage.getItem(MAKE_X_STORAGE_KEYS.LONGEST_STREAK) || "0",
       10
     );
-    const savedSolvedDate = localStorage.getItem(STORAGE_KEYS.SOLVED_DATE);
-    const savedSolvedToday = localStorage.getItem(STORAGE_KEYS.SOLVED_TODAY) === "true";
+    const savedSolvedDate = localStorage.getItem(MAKE_X_STORAGE_KEYS.SOLVED_DATE);
+    const savedSolvedToday = localStorage.getItem(MAKE_X_STORAGE_KEYS.SOLVED_TODAY) === "true";
     
     // If we've solved today, just mark as solved and use stored streak values
     if (savedSolvedToday && savedSolvedDate === today) {
@@ -38,7 +39,7 @@ export const useStreak = () => {
     // If we missed a day (not yesterday and not today), reset streak
     if (savedSolvedDate && savedSolvedDate !== today && savedSolvedDate !== yesterday) {
       setStreaks({ streak: 0, longestStreak: savedLongestStreak });
-      localStorage.setItem(STORAGE_KEYS.STREAK, "0");
+      localStorage.setItem(MAKE_X_STORAGE_KEYS.STREAK, "0");
     } else {
       // Otherwise, use the stored streak values
       setStreaks({ streak: savedStreak, longestStreak: savedLongestStreak });
@@ -52,8 +53,8 @@ export const useStreak = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
     
-    localStorage.setItem(STORAGE_KEYS.STREAK, streaks.streak.toString());
-    localStorage.setItem(STORAGE_KEYS.LONGEST_STREAK, streaks.longestStreak.toString());
+    localStorage.setItem(MAKE_X_STORAGE_KEYS.STREAK, streaks.streak.toString());
+    localStorage.setItem(MAKE_X_STORAGE_KEYS.LONGEST_STREAK, streaks.longestStreak.toString());
   }, [streaks]);
 
   /**
@@ -80,7 +81,7 @@ export const useStreak = () => {
     let streakMessage = "";
 
     // Determine new streak value
-    if (timeElapsed <= STREAK_TIME_LIMIT) {
+    if (timeElapsed <= STREAK_TIME_LIMIT_MAKE_X) {
       // Fast enough for streak eligibility - increment streak
       newStreak = currentStreak + 1;
       
@@ -97,7 +98,7 @@ export const useStreak = () => {
     } else {
       // Too slow - reset streak
       newStreak = 0;
-      streakMessage = `⏱️ Solve within ${STREAK_TIME_LIMIT} seconds to maintain your streak!`;
+      streakMessage = `⏱️ Solve within ${STREAK_TIME_LIMIT_MAKE_X} seconds to maintain your streak!`;
     }
 
     // Update longest streak
@@ -107,10 +108,10 @@ export const useStreak = () => {
     setStreaks({ streak: newStreak, longestStreak: newLongestStreak });
     
     // Update localStorage to record the solve
-    localStorage.setItem(STORAGE_KEYS.STREAK, newStreak.toString());
-    localStorage.setItem(STORAGE_KEYS.LONGEST_STREAK, newLongestStreak.toString());
-    localStorage.setItem(STORAGE_KEYS.SOLVED_TODAY, "true");
-    localStorage.setItem(STORAGE_KEYS.SOLVED_DATE, today);
+    localStorage.setItem(MAKE_X_STORAGE_KEYS.STREAK, newStreak.toString());
+    localStorage.setItem(MAKE_X_STORAGE_KEYS.LONGEST_STREAK, newLongestStreak.toString());
+    localStorage.setItem(MAKE_X_STORAGE_KEYS.SOLVED_TODAY, "true");
+    localStorage.setItem(MAKE_X_STORAGE_KEYS.SOLVED_DATE, today);
 
     return streakMessage;
   };
@@ -122,10 +123,10 @@ export const useStreak = () => {
     if (typeof window === "undefined") return;
     
     // Reset all streak-related localStorage
-    localStorage.removeItem(STORAGE_KEYS.STREAK);
-    localStorage.removeItem(STORAGE_KEYS.LONGEST_STREAK);
-    localStorage.removeItem(STORAGE_KEYS.SOLVED_TODAY);
-    localStorage.removeItem(STORAGE_KEYS.SOLVED_DATE);
+    localStorage.removeItem(MAKE_X_STORAGE_KEYS.STREAK);
+    localStorage.removeItem(MAKE_X_STORAGE_KEYS.LONGEST_STREAK);
+    localStorage.removeItem(MAKE_X_STORAGE_KEYS.SOLVED_TODAY);
+    localStorage.removeItem(MAKE_X_STORAGE_KEYS.SOLVED_DATE);
     
     // Reset state
     setStreaks({ streak: 0, longestStreak: 0 });
@@ -141,4 +142,4 @@ export const useStreak = () => {
     setSolved,
     resetStreakData, // Expose reset function for debugging
   };
-};
+}; 

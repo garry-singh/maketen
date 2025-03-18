@@ -1,4 +1,4 @@
-import { Streaks } from "./types";
+import { Streaks } from "../types";
 
 export interface GameState {
   streaks: Streaks;

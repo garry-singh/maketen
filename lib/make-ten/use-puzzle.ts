@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Puzzle } from "./types";
+import { MakeTenPuzzle } from "../types";
 import { generateDailyPuzzle } from "./puzzle-generator";
-import { VALID_KEYS } from "./constants";
+import { VALID_KEYS } from "../constants";
 import { toast } from "sonner";
 
 /**
@@ -9,7 +9,7 @@ import { toast } from "sonner";
  * @returns Puzzle state and related functions
  */
 export const usePuzzle = () => {
-  const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
+  const [puzzle, setPuzzle] = useState<MakeTenPuzzle | null>(null);
   const [userInput, setUserInput] = useState<string>("");
   const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);

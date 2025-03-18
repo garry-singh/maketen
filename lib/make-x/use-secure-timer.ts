@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { STORAGE_KEYS, DEBUG_MODE } from "../constants";
+import { MAKE_X_STORAGE_KEYS, DEBUG_MODE } from "../constants";
 import { getTodayDateString } from "../date-utils";
 
 /**
- * Custom hook to manage puzzle timer with anti-farming protection
+ * Custom hook to manage puzzle timer with anti-farming protection for MakeX
  * @param solved - Whether puzzle is already solved
  * @returns Timer state and functions
  */
@@ -14,7 +14,7 @@ export const useSecureTimer = (solved: boolean) => {
     if (typeof window === "undefined") return;
     
     const today = getTodayDateString();
-    const firstLoadKey = `${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
+    const firstLoadKey = `${MAKE_X_STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
     
     try {
       // Only set first load time if it doesn't exist for today and not already solved
@@ -24,16 +24,16 @@ export const useSecureTimer = (solved: boolean) => {
         if (DEBUG_MODE) console.log(`Set first load time: ${now}`);
       }
       
-      const savedStartTime = localStorage.getItem(STORAGE_KEYS.PUZZLE_START_TIME);
-      const savedPuzzleDate = localStorage.getItem(STORAGE_KEYS.PUZZLE_DATE);
+      const savedStartTime = localStorage.getItem(MAKE_X_STORAGE_KEYS.PUZZLE_START_TIME);
+      const savedPuzzleDate = localStorage.getItem(MAKE_X_STORAGE_KEYS.PUZZLE_DATE);
       const firstLoadTime = localStorage.getItem(firstLoadKey);
       
       // If it's a new day, reset all times
       if (savedPuzzleDate !== today) {
         const newTime = Date.now();
         setStartTime(newTime);
-        localStorage.setItem(STORAGE_KEYS.PUZZLE_START_TIME, newTime.toString());
-        localStorage.setItem(STORAGE_KEYS.PUZZLE_DATE, today);
+        localStorage.setItem(MAKE_X_STORAGE_KEYS.PUZZLE_START_TIME, newTime.toString());
+        localStorage.setItem(MAKE_X_STORAGE_KEYS.PUZZLE_DATE, today);
         
         // If this is the first load of the day, set firstLoadTime too
         if (!firstLoadTime) {
@@ -59,7 +59,7 @@ export const useSecureTimer = (solved: boolean) => {
           // Edge case: Neither time exists but it's the same day
           const newTime = Date.now();
           setStartTime(newTime);
-          localStorage.setItem(STORAGE_KEYS.PUZZLE_START_TIME, newTime.toString());
+          localStorage.setItem(MAKE_X_STORAGE_KEYS.PUZZLE_START_TIME, newTime.toString());
           localStorage.setItem(firstLoadKey, newTime.toString());
           if (DEBUG_MODE) console.log(`No times found, creating new: ${newTime}`);
         }
@@ -79,8 +79,8 @@ export const useSecureTimer = (solved: boolean) => {
   const getElapsedTime = (): number => {
     try {
       const today = getTodayDateString();
-      const savedStartTime = localStorage.getItem(STORAGE_KEYS.PUZZLE_START_TIME);
-      const firstLoadTime = localStorage.getItem(`${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`);
+      const savedStartTime = localStorage.getItem(MAKE_X_STORAGE_KEYS.PUZZLE_START_TIME);
+      const firstLoadTime = localStorage.getItem(`${MAKE_X_STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`);
       
       let earliestTime = startTime;
       
@@ -109,4 +109,4 @@ export const useSecureTimer = (solved: boolean) => {
     startTime,
     getElapsedTime,
   };
-};
+}; 

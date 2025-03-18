@@ -2,13 +2,14 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
-import { SOCIAL_LINKS, DEBUG_MODE } from "@/lib/make-ten/constants";
-import { Streaks } from "@/lib/make-ten/types";
+import { DEBUG_MODE, SOCIAL_LINKS } from "@/lib/constants";
+import { Streaks } from "@/lib/types";
 
 interface ShareOptionsProps {
   userInput: string;
-  solveTime: number | null;
+  solveTime: number;
   streaks: Streaks;
+  shareText: string;
 }
 
 /**
@@ -18,6 +19,7 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
   userInput,
   solveTime,
   streaks,
+  shareText,
 }) => {
   const copyToClipboard = async () => {
     if (!userInput || !solveTime) {
@@ -30,31 +32,10 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
       return;
     }
 
-    const formattedTime = solveTime.toFixed(2);
-    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
-
-    const maskedSolution = userInput
-      .replace(/[0-9]/g, "⬛")
-      .replace(/[\(\)]/g, "⬜");
-
-    const coloredOperators = maskedSolution
-      .replace(/[+]/g, "➕")
-      .replace(/[-]/g, "➖")
-      .replace(/[*]/g, "✖️")
-      .replace(/[/]/g, "➗");
-
-    // Build share text with conditional streak part and hashtag
-    const shareText = `I solved today's #Make10 in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
-      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
-    }\n\nPlay now: https://maketen.vercel.app/`;
-
-    if (DEBUG_MODE) console.log("Sharing text:", shareText);
-
     // Try Web Share API first
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Make 10",
           text: shareText,
         });
         toast.success("Shared successfully!");
