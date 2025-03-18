@@ -19,7 +19,6 @@ import {
 import { MakeXPuzzle } from "@/lib/types";
 import { useSimpleGameState } from "@/lib/make-x/use-simple-game-state";
 import { useSecureTimer } from "@/lib/make-x/use-secure-timer";
-import { useStreak } from "@/lib/make-x/use-streak";
 
 export default function MakeX() {
   const [puzzle, setPuzzle] = useState<MakeXPuzzle | null>(null);
@@ -38,8 +37,6 @@ export default function MakeX() {
 
   const { getElapsedTime } = useSecureTimer(solved);
 
-  const { updateStreak } = useStreak();
-
   useEffect(() => {
     const seed = getDateSeed();
     const index = getIndexFromSeed(seed, predefinedMakeXPuzzles.length);
@@ -55,8 +52,7 @@ export default function MakeX() {
   const handleSolve = (exprStr: string) => {
     if (!puzzle) return;
     const timeElapsed = getElapsedTime();
-    const streakMessage = updateStreak(timeElapsed);
-    solvePuzzle(timeElapsed, exprStr);
+    const streakMessage = solvePuzzle(timeElapsed, exprStr);
     if (streakMessage) {
       toast.success(streakMessage);
     }
