@@ -219,7 +219,6 @@ export default function MakeX() {
         <ShareOptions
           userInput={lastSolution}
           solveTime={solveTime}
-          streaks={streaks}
           shareText={getShareText()}
         />
       )}

@@ -14,23 +14,6 @@ export function useSimpleGameState() {
   const [solveTime, setSolveTime] = useState<number | null>(null);
   const [lastSolution, setLastSolution] = useState<string>("");
   
-  // Verify localStorage is available and working
-  useEffect(() => {
-    try {
-      // Test basic functionality
-      localStorage.setItem('__test', 'working');
-      const testValue = localStorage.getItem('__test');
-      if (DEBUG_MODE) console.log('localStorage test:', testValue);
-      localStorage.removeItem('__test');
-      
-      // Load initial values
-      loadStateFromStorage();
-    } catch (error) {
-      console.error('localStorage error:', error);
-      // Fallback to memory-only mode if localStorage is unavailable
-    }
-  }, []);
-  
   // Load state from localStorage - can be called directly when needed
   const loadStateFromStorage = useCallback(() => {
     const today = getTodayDateString();
@@ -58,6 +41,23 @@ export function useSimpleGameState() {
         yesterday
       });
     }
+
+      // Verify localStorage is available and working
+  useEffect(() => {
+    try {
+      // Test basic functionality
+      localStorage.setItem('__test', 'working');
+      const testValue = localStorage.getItem('__test');
+      if (DEBUG_MODE) console.log('localStorage test:', testValue);
+      localStorage.removeItem('__test');
+      
+      // Load initial values
+      loadStateFromStorage();
+    } catch (error) {
+      console.error('localStorage error:', error);
+      // Fallback to memory-only mode if localStorage is unavailable
+    }
+  }, [loadStateFromStorage]);
     
     // Check for missed days
     if (savedSolvedDate && savedSolvedDate !== today && savedSolvedDate !== yesterday) {

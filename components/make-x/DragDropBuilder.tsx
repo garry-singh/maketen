@@ -11,8 +11,6 @@ import ExpressionItem from "./ExpressionItem";
 
 const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
   numbers,
-  target,
-  onSolve,
   solved,
   expression,
   usedNumbers,
@@ -130,7 +128,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
 
       const parsed = JSON.parse(data);
       handleAdd(parsed.value, parsed.type);
-    } catch (err) {
+    } catch {
       return;
     }
   };

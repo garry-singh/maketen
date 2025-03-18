@@ -3,12 +3,10 @@ import { Button } from "@/components/ui/button";
 import { FaXTwitter } from "react-icons/fa6";
 import { toast } from "sonner";
 import { DEBUG_MODE, SOCIAL_LINKS } from "@/lib/constants";
-import { Streaks } from "@/lib/types";
 
 interface ShareOptionsProps {
   userInput: string;
   solveTime: number;
-  streaks: Streaks;
   shareText: string;
 }
 
@@ -18,7 +16,6 @@ interface ShareOptionsProps {
 const ShareOptions: React.FC<ShareOptionsProps> = ({
   userInput,
   solveTime,
-  streaks,
   shareText,
 }) => {
   const copyToClipboard = async () => {

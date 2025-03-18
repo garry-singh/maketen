@@ -407,7 +407,6 @@ const MakeTen: React.FC = () => {
         <ShareOptions
           userInput={solutionToShare}
           solveTime={solveTime}
-          streaks={streaks}
           shareText={getShareText()}
         />
       )}

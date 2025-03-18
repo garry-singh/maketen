@@ -1,3 +1,5 @@
+import { ExpressionItem } from "./make-x/interfaces";
+
 export interface MakeTenPuzzle {
   numbers: number[];
   solution: string;
@@ -14,7 +16,7 @@ export interface GameState {
   solved: boolean;
   solveTime: number | null;
   startTime: number | null;
-  expression: any[]; // This will be overridden by specific game types
+  expression: ExpressionItem[];
   usedNumbers: boolean[];
 }
 
