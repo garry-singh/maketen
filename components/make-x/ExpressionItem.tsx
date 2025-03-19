@@ -7,7 +7,9 @@ const ExpressionItem: React.FC<ExpressionItemProps> = ({ item, onRemove }) => (
     <div
       className={cn(
         "w-12 h-12 md:w-[60px] md:h-[60px] flex items-center justify-center rounded-lg text-lg md:text-2xl font-bold transition-colors",
-        item.isGrouped
+        item.locked
+          ? "bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background"
+          : item.isGrouped
           ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
           : item.type === "number"
           ? "bg-primary text-primary-foreground"

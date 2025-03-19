@@ -5,6 +5,7 @@ export interface ExpressionItem {
   id: string;
   isGrouped?: boolean;
   originalExpression?: ExpressionItem[];
+  locked?: boolean;
 }
 
 export interface DragDropBuilderProps {
@@ -16,6 +17,7 @@ export interface DragDropBuilderProps {
   usedNumbers: boolean[];
   onExpressionChange: (expression: ExpressionItem[]) => void;
   onUsedNumbersChange: (usedNumbers: boolean[]) => void;
+  onFullExpressionChange: (fullExpression: string) => void;
 }
 
 export interface DraggableNumberProps {

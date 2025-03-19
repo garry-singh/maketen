@@ -29,9 +29,10 @@ const gameLinks = [
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = React.useState(false);
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
           variant="ghost"
@@ -53,6 +54,7 @@ const Sidebar = () => {
               <Link
                 key={link.href}
                 href={link.href}
+                onClick={() => setIsOpen(false)}
                 className={cn(
                   "relative p-4 rounded-lg transition-all duration-200",
                   isActive

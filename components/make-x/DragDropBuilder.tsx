@@ -19,6 +19,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
   usedNumbers,
   onExpressionChange,
   onUsedNumbersChange,
+  onFullExpressionChange,
 }) => {
   const handleDragStart = (
     e: React.DragEvent,
@@ -42,27 +43,75 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     }
   };
 
-  const findLastCompleteExpression = (expr: ExpressionItemType[]): number => {
-    let openBrackets = 0;
-    let lastValidIndex = -1;
+  const findNewCompleteExpression = (
+    expr: ExpressionItemType[]
+  ): { startIndex: number; endIndex: number } | null => {
+    // If less than 3 items, no complete expression possible
+    if (expr.length < 3) return null;
 
-    for (let i = expr.length - 1; i >= 0; i--) {
-      const item = expr[i];
-      if (item.value === ")") openBrackets++;
-      else if (item.value === "(") openBrackets--;
+    // First check for complete bracketed expressions
+    let openBracketCount = 0;
+    let lastOpenBracketIndex = -1;
 
-      // If we're at a number and brackets are balanced
-      if (openBrackets === 0 && item.type === "number") {
-        // Check if this number is part of a complete expression
-        const subExpr = expr.slice(0, i + 1);
-        const result = evaluateExpression(subExpr);
-        if (result !== null) {
-          lastValidIndex = i;
-          break;
+    for (let i = 0; i < expr.length; i++) {
+      if (expr[i].value === "(") {
+        openBracketCount++;
+        lastOpenBracketIndex = i;
+      } else if (expr[i].value === ")") {
+        openBracketCount--;
+        // If we've found a matching closing bracket
+        if (openBracketCount === 0 && lastOpenBracketIndex !== -1) {
+          // Evaluate the expression inside the brackets
+          const innerExpr = expr.slice(lastOpenBracketIndex + 1, i);
+          const result = evaluateExpression(innerExpr);
+          if (result !== null) {
+            return {
+              startIndex: lastOpenBracketIndex,
+              endIndex: i,
+            };
+          }
         }
       }
     }
-    return lastValidIndex;
+
+    // Find the last locked item
+    let lastLockedIndex = -1;
+    for (let i = expr.length - 1; i >= 0; i--) {
+      if (expr[i].locked) {
+        lastLockedIndex = i;
+        break;
+      }
+    }
+
+    // If we have no locked items, check the entire expression
+    if (lastLockedIndex === -1) {
+      const result = evaluateExpression(expr);
+      if (result !== null) {
+        return { startIndex: 0, endIndex: expr.length - 1 };
+      }
+      return null;
+    }
+
+    // If we have a locked item, check the segment after it
+    const remainingItems = expr.slice(lastLockedIndex + 1);
+    if (remainingItems.length >= 3) {
+      // First item after locked item must be an operator
+      if (remainingItems[0].type !== "operator") {
+        return null;
+      }
+
+      // Check the items after the operator
+      const itemsAfterOperator = remainingItems.slice(1);
+      const result = evaluateExpression(itemsAfterOperator);
+      if (result !== null) {
+        return {
+          startIndex: lastLockedIndex + 2, // Skip the locked item and the operator
+          endIndex: expr.length - 1,
+        };
+      }
+    }
+
+    return null;
   };
 
   const groupExpressions = (
@@ -70,10 +119,11 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
   ): ExpressionItemType[] => {
     if (expr.length === 0) return [];
 
-    const lastValidIndex = findLastCompleteExpression(expr);
-    if (lastValidIndex === -1) return expr;
+    const validRange = findNewCompleteExpression(expr);
+    if (!validRange) return expr;
 
-    const subExpr = expr.slice(0, lastValidIndex + 1);
+    const { startIndex, endIndex } = validRange;
+    const subExpr = expr.slice(startIndex, endIndex + 1);
     const result = evaluateExpression(subExpr);
 
     if (result === null) return expr;
@@ -85,11 +135,16 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
       used: true,
       id: Math.random().toString(),
       isGrouped: true,
+      locked: true,
       originalExpression: subExpr,
     };
 
-    // Return the grouped item followed by any remaining items
-    return [groupedItem, ...expr.slice(lastValidIndex + 1)];
+    // Return: items before + grouped item + items after
+    return [
+      ...expr.slice(0, startIndex),
+      groupedItem,
+      ...expr.slice(endIndex + 1),
+    ];
   };
 
   const handleAdd = (
@@ -186,6 +241,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     // Try to group expressions
     newExpression = groupExpressions(newExpression);
     onExpressionChange(newExpression);
+    onFullExpressionChange(getFullExpression(newExpression));
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -212,35 +268,91 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     }
   };
 
+  const restoreNumbers = (item: ExpressionItemType) => {
+    const numbersToRestore: number[] = [];
+
+    const collectNumbers = (item: ExpressionItemType) => {
+      // If it's a grouped item with original expression
+      if (item.isGrouped && item.originalExpression) {
+        item.originalExpression.forEach((subItem) => {
+          // Recursively collect numbers from nested groups
+          if (subItem.isGrouped) {
+            collectNumbers(subItem);
+          }
+          // Collect individual numbers
+          else if (subItem.type === "number") {
+            const num = parseInt(subItem.value);
+            if (!numbersToRestore.includes(num)) {
+              numbersToRestore.push(num);
+            }
+          }
+        });
+      }
+      // If it's a regular number
+      else if (item.type === "number") {
+        const num = parseInt(item.value);
+        if (!numbersToRestore.includes(num)) {
+          numbersToRestore.push(num);
+        }
+      }
+    };
+
+    collectNumbers(item);
+
+    // Update usedNumbers once with all collected numbers
+    if (numbersToRestore.length > 0) {
+      const newUsedNumbers = [...usedNumbers];
+      numbersToRestore.forEach((num) => {
+        const index = numbers.indexOf(num);
+        if (index !== -1) {
+          newUsedNumbers[index] = false;
+        }
+      });
+      onUsedNumbersChange(newUsedNumbers);
+    }
+  };
+
+  const clearExpressionAndRestoreAllNumbers = () => {
+    // Create a new array with all numbers marked as unused
+    const newUsedNumbers = new Array(numbers.length).fill(false);
+    onUsedNumbersChange(newUsedNumbers);
+    onExpressionChange([]);
+    onFullExpressionChange("");
+    toast.error(
+      "Expression cleared as it would be invalid without the operator"
+    );
+  };
+
   const handleRemove = (index: number) => {
     const itemToRemove = expression[index];
 
-    // If removing a grouped item, restore all its original numbers
-    if (itemToRemove.isGrouped && itemToRemove.originalExpression) {
-      itemToRemove.originalExpression.forEach((item) => {
-        if (item.type === "number") {
-          const numberIndex = numbers.indexOf(parseInt(item.value));
-          if (numberIndex !== -1) {
-            const newUsedNumbers = [...usedNumbers];
-            newUsedNumbers[numberIndex] = false;
-            onUsedNumbersChange(newUsedNumbers);
-          }
+    // Check if removing an operator would result in an invalid expression
+    if (itemToRemove.type === "operator") {
+      // Create a test expression without the operator
+      const testExpression = expression.filter((_, i) => i !== index);
+
+      // Check if any two adjacent items are both numbers or groups
+      for (let i = 0; i < testExpression.length - 1; i++) {
+        const currentItem = testExpression[i];
+        const nextItem = testExpression[i + 1];
+
+        if (
+          (currentItem.type === "number" || currentItem.isGrouped) &&
+          (nextItem.type === "number" || nextItem.isGrouped)
+        ) {
+          // Invalid sequence found, clear everything
+          clearExpressionAndRestoreAllNumbers();
+          onFullExpressionChange("");
+          return;
         }
-      });
-    }
-    // If it's a regular number, update usedNumbers
-    else if (itemToRemove.type === "number") {
-      const numberIndex = numbers.indexOf(parseInt(itemToRemove.value));
-      if (numberIndex !== -1) {
-        const newUsedNumbers = [...usedNumbers];
-        newUsedNumbers[numberIndex] = false;
-        onUsedNumbersChange(newUsedNumbers);
       }
     }
 
-    // Remove the item and update expression
+    // Normal removal for other cases
+    restoreNumbers(itemToRemove);
     const newExpression = expression.filter((_, i) => i !== index);
     onExpressionChange(newExpression);
+    onFullExpressionChange(getFullExpression(newExpression));
   };
 
   const calculateCurrentValue = () => {
@@ -263,6 +375,17 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     return `grid-cols-${count}`;
   };
 
+  const getFullExpression = (expr: ExpressionItemType[]): string => {
+    return expr
+      .map((item) => {
+        if (item.isGrouped && item.originalExpression) {
+          return getFullExpression(item.originalExpression);
+        }
+        return item.value;
+      })
+      .join("");
+  };
+
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-6 md:gap-8">
       <div className="w-full max-w-xl md:max-w-6xl">
@@ -276,61 +399,20 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
               Click or drag items to build your expression
             </span>
           ) : (
-            <>
-              {(() => {
-                const result = evaluateExpression(expression);
-
-                // If we have a valid result, show only the result box
-                if (result !== null) {
-                  return (
-                    <div className="relative">
-                      <div className="w-auto min-w-[3rem] h-12 md:h-[60px] px-4 flex items-center justify-center rounded-lg text-lg md:text-2xl font-bold bg-primary text-primary-foreground">
-                        {result}
-                      </div>
-                      <button
-                        onClick={() => {
-                          // When removing a result, restore all used numbers
-                          const newUsedNumbers = [...usedNumbers];
-                          expression.forEach((expr) => {
-                            if (expr.type === "number") {
-                              const numIndex = numbers.indexOf(
-                                parseInt(expr.value)
-                              );
-                              if (numIndex !== -1) {
-                                newUsedNumbers[numIndex] = false;
-                              }
-                            }
-                          });
-                          onUsedNumbersChange(newUsedNumbers);
-                          onExpressionChange([]);
-                        }}
-                        className="absolute -top-2 -right-2 w-6 h-6 md:w-7 md:h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-sm md:text-base font-bold hover:bg-red-600 transition-colors shadow-sm"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  );
-                }
-
-                // Otherwise show the individual items while building the expression
-                return expression.map((item, index) => (
-                  <ExpressionItem
-                    key={item.id}
-                    item={item}
-                    onRemove={() => handleRemove(index)}
-                  />
-                ));
-              })()}
-            </>
+            expression.map((item, index) => (
+              <ExpressionItem
+                key={item.id}
+                item={item}
+                onRemove={() => handleRemove(index)}
+              />
+            ))
           )}
         </div>
       </div>
 
       <div className="text-xl md:text-2xl font-bold flex items-center gap-2">
         <span className="text-muted-foreground">
-          {expression.length > 0
-            ? expression.map((item) => item.value).join("")
-            : "?"}
+          {expression.length > 0 ? getFullExpression(expression) : "?"}
         </span>
         <span>=</span>
         <span>{currentValue !== null ? currentValue : "?"}</span>

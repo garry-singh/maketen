@@ -25,6 +25,7 @@ export default function MakeX() {
   const [expression, setExpression] = useState<ExpressionItem[]>([]);
   const [usedNumbers, setUsedNumbers] = useState<boolean[]>([]);
   const [localResetTime, setLocalResetTime] = useState<string>("");
+  const [fullExpression, setFullExpression] = useState<string>("");
 
   const {
     streaks,
@@ -112,12 +113,12 @@ export default function MakeX() {
   };
 
   const getShareText = () => {
-    if (!lastSolution || !solveTime) return "";
+    if (!fullExpression || !solveTime) return "";
 
     const formattedTime = solveTime.toFixed(2);
     const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
 
-    const maskedSolution = lastSolution
+    const maskedSolution = fullExpression
       .replace(/[0-9]/g, "⬛")
       .replace(/[\(\)]/g, "⬜");
 
@@ -127,9 +128,9 @@ export default function MakeX() {
       .replace(/[*]/g, "✖️")
       .replace(/[/]/g, "➗");
 
-    return `I solved today's #MakeX in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
+    return `I solved today's #MakeX in ${formattedTime}s! \n\nMy solution: ${fullExpression}\nPattern: ${coloredOperators}${
       streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
-    }\n\nPlay now: https://maketen.vercel.app/make-x`;
+    }\n\nPlay now: https://makex.vercel.app/`;
   };
 
   if (!puzzle) {
@@ -175,6 +176,7 @@ export default function MakeX() {
             usedNumbers={usedNumbers}
             onExpressionChange={setExpression}
             onUsedNumbersChange={setUsedNumbers}
+            onFullExpressionChange={setFullExpression}
           />
         )}
       </div>
