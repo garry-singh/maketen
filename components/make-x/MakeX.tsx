@@ -19,6 +19,7 @@ import {
 import { MakeXPuzzle } from "@/lib/types";
 import { useSimpleGameState } from "@/lib/make-x/use-simple-game-state";
 import { useSecureTimer } from "@/lib/make-x/use-secure-timer";
+import Link from "next/link";
 
 export default function MakeX() {
   const [puzzle, setPuzzle] = useState<MakeXPuzzle | null>(null);
@@ -164,7 +165,11 @@ export default function MakeX() {
 
         {solved ? (
           <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
-            Come back at {localResetTime} for a new puzzle!
+            Come back at {localResetTime} for a new puzzle!{" "}
+            <Link href="/">
+              <a className="text-primary hover:underline">Switch to Make 10</a>
+            </Link>{" "}
+            and try the classic mode!
           </p>
         ) : (
           <DragDropBuilder

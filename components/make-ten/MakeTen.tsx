@@ -26,6 +26,7 @@ import {
   validateInput,
   manageStorageQuota,
 } from "@/lib/make-ten/security";
+import Link from "next/link";
 
 /**
  * Main component for the Make Ten game
@@ -249,7 +250,11 @@ const MakeTen: React.FC = () => {
         {/* Input Field */}
         {solved ? (
           <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
-            Come back at {localResetTime} for a new puzzle!
+            Come back at {localResetTime} for a new puzzle!{" "}
+            <Link href="/make-x">
+              <a className="text-primary hover:underline">Play Make X</a>
+            </Link>{" "}
+            until then!
           </p>
         ) : (
           <Input
