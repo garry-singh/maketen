@@ -4,7 +4,10 @@ import React from "react";
 import { OPERATORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { DragDropBuilderProps } from "@/lib/make-x/interfaces";
+import {
+  DragDropBuilderProps,
+  ExpressionItem as ExpressionItemType,
+} from "@/lib/make-x/interfaces";
 import DraggableNumber from "./DraggableNumber";
 import DraggableOperator from "./DraggableOperator";
 import ExpressionItem from "./ExpressionItem";
@@ -29,11 +32,32 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     e.dataTransfer.effectAllowed = "move";
   };
 
+  const evaluateExpression = (expr: ExpressionItemType[]): number | null => {
+    try {
+      const exprStr = expr.map((item) => item.value).join("");
+      const result = eval(exprStr);
+      return typeof result === "number" && isFinite(result) ? result : null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleAdd = (
     value: string,
     type: "number" | "operator" | "bracket"
   ) => {
     if (solved) return;
+
+    // Create new item
+    const newItem = {
+      type,
+      value,
+      used: type === "number",
+      id: Math.random().toString(),
+    };
+
+    // Create new expression array
+    let newExpression = [...expression];
 
     if (type === "number") {
       // Can't add number after number or after closing bracket
@@ -49,11 +73,9 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
       const numIndex = numbers.indexOf(num);
       if (usedNumbers[numIndex]) return;
 
-      onExpressionChange([
-        ...expression,
-        { type: "number", value, used: true, id: Math.random().toString() },
-      ]);
+      newExpression.push(newItem);
 
+      // Update used numbers
       const newUsed = [...usedNumbers];
       newUsed[numIndex] = true;
       onUsedNumbersChange(newUsed);
@@ -73,10 +95,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
         return;
       }
 
-      onExpressionChange([
-        ...expression,
-        { type: "operator", value, used: false, id: Math.random().toString() },
-      ]);
+      newExpression.push(newItem);
     } else if (type === "bracket") {
       if (value === "(") {
         // Opening bracket can't come after a number or closing bracket
@@ -111,10 +130,16 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
         }
       }
 
-      onExpressionChange([
-        ...expression,
-        { type: "bracket", value, used: false, id: Math.random().toString() },
-      ]);
+      newExpression.push(newItem);
+    }
+
+    // Try to evaluate the expression
+    const result = evaluateExpression(newExpression);
+    if (result !== null) {
+      // If valid, update with evaluated result
+      onExpressionChange(newExpression);
+    } else {
+      onExpressionChange(newExpression);
     }
   };
 
@@ -143,132 +168,21 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
   };
 
   const handleRemove = (index: number) => {
-    const newExpression = [...expression];
-    const removedItem = newExpression[index];
-    newExpression.splice(index, 1);
+    const itemToRemove = expression[index];
 
-    // Update usedNumbers state
-    const newUsedNumbers = [...usedNumbers];
-    if (removedItem.type === "number") {
-      const numberIndex = numbers.indexOf(parseInt(removedItem.value));
+    // If it's a number, update usedNumbers
+    if (itemToRemove.type === "number") {
+      const numberIndex = numbers.indexOf(parseInt(itemToRemove.value));
       if (numberIndex !== -1) {
+        const newUsedNumbers = [...usedNumbers];
         newUsedNumbers[numberIndex] = false;
+        onUsedNumbersChange(newUsedNumbers);
       }
     }
 
-    // Check if the remaining expression is valid
-    let isValid = true;
-    let bracketCount = 0;
-    let lastWasOperator = true; // Start with true to allow first item to be a number or opening bracket
-    let lastWasNumber = false;
-
-    for (let i = 0; i < newExpression.length; i++) {
-      const item = newExpression[i];
-
-      if (item.type === "bracket") {
-        if (item.value === "(") {
-          bracketCount++;
-          lastWasOperator = true;
-          lastWasNumber = false;
-        } else {
-          bracketCount--;
-          lastWasOperator = false;
-          lastWasNumber = true;
-        }
-      } else if (item.type === "operator") {
-        if (lastWasOperator && item.value !== "(") {
-          isValid = false;
-          break;
-        }
-        lastWasOperator = true;
-        lastWasNumber = false;
-      } else {
-        if (!lastWasOperator && !lastWasNumber) {
-          isValid = false;
-          break;
-        }
-        lastWasOperator = false;
-        lastWasNumber = true;
-      }
-
-      if (bracketCount < 0) {
-        isValid = false;
-        break;
-      }
-    }
-
-    if (bracketCount !== 0) {
-      isValid = false;
-    }
-
-    if (isValid) {
-      onExpressionChange(newExpression);
-      onUsedNumbersChange(newUsedNumbers);
-    } else {
-      // If invalid, try to find the last valid position
-      let lastValidIndex = -1;
-      let tempBracketCount = 0;
-      let tempLastWasOperator = true;
-      let tempLastWasNumber = false;
-
-      for (let i = 0; i < newExpression.length; i++) {
-        const item = newExpression[i];
-
-        if (item.type === "bracket") {
-          if (item.value === "(") {
-            tempBracketCount++;
-            tempLastWasOperator = true;
-            tempLastWasNumber = false;
-          } else {
-            tempBracketCount--;
-            tempLastWasOperator = false;
-            tempLastWasNumber = true;
-          }
-        } else if (item.type === "operator") {
-          if (tempLastWasOperator && item.value !== "(") {
-            break;
-          }
-          tempLastWasOperator = true;
-          tempLastWasNumber = false;
-        } else {
-          if (!tempLastWasOperator && !tempLastWasNumber) {
-            break;
-          }
-          tempLastWasOperator = false;
-          tempLastWasNumber = true;
-        }
-
-        if (tempBracketCount < 0) {
-          break;
-        }
-
-        lastValidIndex = i;
-      }
-
-      if (tempBracketCount !== 0) {
-        lastValidIndex--;
-      }
-
-      if (lastValidIndex >= 0) {
-        // Keep only the valid part of the expression
-        const validExpression = newExpression.slice(0, lastValidIndex + 1);
-        onExpressionChange(validExpression);
-
-        // Update usedNumbers to match the valid expression
-        const validUsedNumbers = [...usedNumbers];
-        numbers.forEach((num, idx) => {
-          const isUsed = validExpression.some(
-            (item) => item.type === "number" && parseInt(item.value) === num
-          );
-          validUsedNumbers[idx] = isUsed;
-        });
-        onUsedNumbersChange(validUsedNumbers);
-      } else {
-        // If no valid part found, clear the expression
-        onExpressionChange([]);
-        onUsedNumbersChange(new Array(numbers.length).fill(false));
-      }
-    }
+    // Remove the item and update expression
+    const newExpression = expression.filter((_, i) => i !== index);
+    onExpressionChange(newExpression);
   };
 
   const calculateCurrentValue = () => {
@@ -304,13 +218,52 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
               Click or drag items to build your expression
             </span>
           ) : (
-            expression.map((item, index) => (
-              <ExpressionItem
-                key={item.id}
-                item={item}
-                onRemove={() => handleRemove(index)}
-              />
-            ))
+            <>
+              {(() => {
+                const result = evaluateExpression(expression);
+
+                // If we have a valid result, show only the result box
+                if (result !== null) {
+                  return (
+                    <div className="relative">
+                      <div className="w-auto min-w-[3rem] h-12 md:h-[60px] px-4 flex items-center justify-center rounded-lg text-lg md:text-2xl font-bold bg-primary text-primary-foreground">
+                        {result}
+                      </div>
+                      <button
+                        onClick={() => {
+                          // When removing a result, restore all used numbers
+                          const newUsedNumbers = [...usedNumbers];
+                          expression.forEach((expr) => {
+                            if (expr.type === "number") {
+                              const numIndex = numbers.indexOf(
+                                parseInt(expr.value)
+                              );
+                              if (numIndex !== -1) {
+                                newUsedNumbers[numIndex] = false;
+                              }
+                            }
+                          });
+                          onUsedNumbersChange(newUsedNumbers);
+                          onExpressionChange([]);
+                        }}
+                        className="absolute -top-2 -right-2 w-6 h-6 md:w-7 md:h-7 rounded-full bg-red-500 text-white flex items-center justify-center text-sm md:text-base font-bold hover:bg-red-600 transition-colors shadow-sm"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                }
+
+                // Otherwise show the individual items while building the expression
+                return expression.map((item, index) => (
+                  <ExpressionItem
+                    key={item.id}
+                    item={item}
+                    onRemove={() => handleRemove(index)}
+                  />
+                ));
+              })()}
+            </>
           )}
         </div>
       </div>
