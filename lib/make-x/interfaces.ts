@@ -3,6 +3,8 @@ export interface ExpressionItem {
   value: string;
   used: boolean;
   id: string;
+  isGrouped?: boolean;
+  originalExpression?: ExpressionItem[];
 }
 
 export interface DragDropBuilderProps {

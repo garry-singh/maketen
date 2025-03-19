@@ -3,12 +3,17 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/app/components/theme-provider";
 import Layout from "@/components/layout/Layout";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Make 10",
-  description: "A daily number puzzle game",
+  title: {
+    template: "%s | Daily Puzzle Games",
+    default: "Daily Puzzle Games",
+  },
+  description: "Daily arithmetic puzzle games to challenge your mind",
 };
 
 export default function RootLayout({
@@ -26,6 +31,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Layout>{children}</Layout>
+          <Analytics />
+          <SpeedInsights />
         </ThemeProvider>
       </body>
     </html>

@@ -42,6 +42,56 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     }
   };
 
+  const findLastCompleteExpression = (expr: ExpressionItemType[]): number => {
+    let openBrackets = 0;
+    let lastValidIndex = -1;
+
+    for (let i = expr.length - 1; i >= 0; i--) {
+      const item = expr[i];
+      if (item.value === ")") openBrackets++;
+      else if (item.value === "(") openBrackets--;
+
+      // If we're at a number and brackets are balanced
+      if (openBrackets === 0 && item.type === "number") {
+        // Check if this number is part of a complete expression
+        const subExpr = expr.slice(0, i + 1);
+        const result = evaluateExpression(subExpr);
+        if (result !== null) {
+          lastValidIndex = i;
+          break;
+        }
+      }
+    }
+    return lastValidIndex;
+  };
+
+  const groupExpressions = (
+    expr: ExpressionItemType[]
+  ): ExpressionItemType[] => {
+    if (expr.length === 0) return [];
+
+    const lastValidIndex = findLastCompleteExpression(expr);
+    if (lastValidIndex === -1) return expr;
+
+    const subExpr = expr.slice(0, lastValidIndex + 1);
+    const result = evaluateExpression(subExpr);
+
+    if (result === null) return expr;
+
+    // Create a new grouped item for the evaluated expression
+    const groupedItem: ExpressionItemType = {
+      type: "number",
+      value: result.toString(),
+      used: true,
+      id: Math.random().toString(),
+      isGrouped: true,
+      originalExpression: subExpr,
+    };
+
+    // Return the grouped item followed by any remaining items
+    return [groupedItem, ...expr.slice(lastValidIndex + 1)];
+  };
+
   const handleAdd = (
     value: string,
     type: "number" | "operator" | "bracket"
@@ -57,7 +107,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     };
 
     // Create new expression array
-    const newExpression = [...expression];
+    let newExpression = [...expression];
 
     if (type === "number") {
       // Can't add number after number or after closing bracket
@@ -88,7 +138,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
         toast.error("Cannot add operator here");
         return;
       }
-      // Can't add operator after operator or after opening bracket
+      // Can't add operator after operator
       const lastItem = expression[expression.length - 1];
       if (lastItem.type === "operator") {
         toast.error("Cannot add consecutive operators");
@@ -133,14 +183,9 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
       newExpression.push(newItem);
     }
 
-    // Try to evaluate the expression
-    const result = evaluateExpression(newExpression);
-    if (result !== null) {
-      // If valid, update with evaluated result
-      onExpressionChange(newExpression);
-    } else {
-      onExpressionChange(newExpression);
-    }
+    // Try to group expressions
+    newExpression = groupExpressions(newExpression);
+    onExpressionChange(newExpression);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -170,8 +215,21 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
   const handleRemove = (index: number) => {
     const itemToRemove = expression[index];
 
-    // If it's a number, update usedNumbers
-    if (itemToRemove.type === "number") {
+    // If removing a grouped item, restore all its original numbers
+    if (itemToRemove.isGrouped && itemToRemove.originalExpression) {
+      itemToRemove.originalExpression.forEach((item) => {
+        if (item.type === "number") {
+          const numberIndex = numbers.indexOf(parseInt(item.value));
+          if (numberIndex !== -1) {
+            const newUsedNumbers = [...usedNumbers];
+            newUsedNumbers[numberIndex] = false;
+            onUsedNumbersChange(newUsedNumbers);
+          }
+        }
+      });
+    }
+    // If it's a regular number, update usedNumbers
+    else if (itemToRemove.type === "number") {
       const numberIndex = numbers.indexOf(parseInt(itemToRemove.value));
       if (numberIndex !== -1) {
         const newUsedNumbers = [...usedNumbers];
