@@ -57,7 +57,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     };
 
     // Create new expression array
-    let newExpression = [...expression];
+    const newExpression = [...expression];
 
     if (type === "number") {
       // Can't add number after number or after closing bracket
