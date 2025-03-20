@@ -123,9 +123,9 @@ export default function MakeX() {
       .replace(/[*]/g, "✖️")
       .replace(/[/]/g, "➗");
 
-    return `I solved today's #MakeX in ${formattedTime}s! \n\nMy solution: ${fullExpression}\nPattern: ${coloredOperators}${
+    return `I solved today's #MakeX in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
       streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
-    }\n\nPlay now: https://makex.vercel.app/`;
+    }\n\nPlay now: https://maketen.vercel.app/make-x`;
   };
 
   if (!puzzle) {
