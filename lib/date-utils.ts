@@ -6,7 +6,11 @@ export function getUTCDate(): Date {
 }
 
 export function getDateSeed(): number {
-  return getUTCDate().getTime();
+  const date = getUTCDate();
+  // Create a seed using only year, month, and day
+  return date.getUTCFullYear() * 10000 + 
+         (date.getUTCMonth() + 1) * 100 + 
+         date.getUTCDate();
 }
 
 export function getIndexFromSeed(seed: number, length: number): number {

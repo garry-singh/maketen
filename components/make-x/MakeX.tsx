@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "sonner";
 import { ModeToggle } from "@/app/components/mode-toggle";
-import { predefinedMakeXPuzzles } from "@/app/makeXPuzzles";
 import LoadingErrorView from "@/components/LoadingErrorView";
 import ShareOptions from "@/components/ShareOptions";
 import LocalStorageDebugger from "@/components/make-x/LocalStorageDebugger";
@@ -11,15 +10,12 @@ import InfoDialog from "@/components/make-x/InfoDialog";
 import DragDropBuilder from "./DragDropBuilder";
 import { cn } from "@/lib/utils";
 import { ExpressionItem } from "@/lib/make-x/interfaces";
-import {
-  getDateSeed,
-  getIndexFromSeed,
-  getNextPuzzleTime,
-} from "@/lib/date-utils";
+import { getNextPuzzleTime } from "@/lib/date-utils";
 import { MakeXPuzzle } from "@/lib/types";
 import { useSimpleGameState } from "@/lib/make-x/use-simple-game-state";
 import { useSecureTimer } from "@/lib/make-x/use-secure-timer";
 import Link from "next/link";
+import { generateDailyMakeXPuzzle } from "@/lib/make-x/puzzle-generator";
 
 export default function MakeX() {
   const [puzzle, setPuzzle] = useState<MakeXPuzzle | null>(null);
@@ -40,9 +36,7 @@ export default function MakeX() {
   const { getElapsedTime } = useSecureTimer(solved);
 
   useEffect(() => {
-    const seed = getDateSeed();
-    const index = getIndexFromSeed(seed, predefinedMakeXPuzzles.length);
-    const newPuzzle = predefinedMakeXPuzzles[index];
+    const newPuzzle = generateDailyMakeXPuzzle();
     setPuzzle(newPuzzle);
     setUsedNumbers(new Array(newPuzzle.numbers.length).fill(false));
 

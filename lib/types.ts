@@ -10,6 +10,7 @@ export interface MakeXPuzzle {
     numbers: number[];
     solution: string;
     target: number;
+    date: string;
   }
 
 export interface GameState {
