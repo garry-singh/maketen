@@ -252,7 +252,7 @@ const MakeTen: React.FC = () => {
           <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
             Come back at {localResetTime} for a new puzzle!{" "}
             <Link href="/make-x">
-              <a className="text-primary hover:underline">Play Make X</a>
+              <a className="text-blue-500 hover:underline">Play Make X</a>
             </Link>{" "}
             until then!
           </p>

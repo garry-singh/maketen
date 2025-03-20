@@ -167,7 +167,7 @@ export default function MakeX() {
           <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
             Come back at {localResetTime} for a new puzzle!{" "}
             <Link href="/">
-              <a className="text-primary hover:underline">Switch to Make 10</a>
+              <a className="text-blue-500 hover:underline">Switch to Make 10</a>
             </Link>{" "}
             and try the classic mode!
           </p>
