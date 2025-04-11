@@ -15,53 +15,31 @@ export const useSecureTimer = (solved: boolean) => {
     
     const today = getTodayDateString();
     const firstLoadKey = `${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
+    const savedPuzzleDate = localStorage.getItem(STORAGE_KEYS.PUZZLE_DATE);
     
     try {
-      // Only set first load time if it doesn't exist for today and not already solved
-      if (!localStorage.getItem(firstLoadKey) && !solved) {
+      // Check if it's a new day
+      if (savedPuzzleDate !== today) {
+        // New day - set current time as first load time
         const now = Date.now();
         localStorage.setItem(firstLoadKey, now.toString());
-        if (DEBUG_MODE) console.log(`Set first load time: ${now}`);
-      }
-      
-      const savedStartTime = localStorage.getItem(STORAGE_KEYS.PUZZLE_START_TIME);
-      const savedPuzzleDate = localStorage.getItem(STORAGE_KEYS.PUZZLE_DATE);
-      const firstLoadTime = localStorage.getItem(firstLoadKey);
-      
-      // If it's a new day, reset all times
-      if (savedPuzzleDate !== today) {
-        const newTime = Date.now();
-        setStartTime(newTime);
-        localStorage.setItem(STORAGE_KEYS.PUZZLE_START_TIME, newTime.toString());
         localStorage.setItem(STORAGE_KEYS.PUZZLE_DATE, today);
-        
-        // If this is the first load of the day, set firstLoadTime too
-        if (!firstLoadTime) {
-          localStorage.setItem(firstLoadKey, newTime.toString());
-        }
-        
-        if (DEBUG_MODE) console.log(`New day, reset timer: ${newTime}`);
+        setStartTime(now);
+        if (DEBUG_MODE) console.log(`New day, set first load time: ${now}`);
       } else {
-        // Anti-farming: Always use the EARLIEST recorded time between firstLoadTime and puzzleStartTime
-        if (firstLoadTime && savedStartTime) {
-          const firstLoad = parseInt(firstLoadTime, 10);
-          const puzzleStart = parseInt(savedStartTime, 10);
-          const earliestTime = Math.min(firstLoad, puzzleStart);
-          setStartTime(earliestTime);
-          if (DEBUG_MODE) console.log(`Using earliest time: ${earliestTime}`);
+        // Same day - check if we already have a first load time
+        const firstLoadTime = localStorage.getItem(firstLoadKey);
+        
+        if (!firstLoadTime && !solved) {
+          // First time loading the page today and not solved
+          const now = Date.now();
+          localStorage.setItem(firstLoadKey, now.toString());
+          setStartTime(now);
+          if (DEBUG_MODE) console.log(`Set first load time: ${now}`);
         } else if (firstLoadTime) {
+          // Use existing first load time
           setStartTime(parseInt(firstLoadTime, 10));
-          if (DEBUG_MODE) console.log(`Using first load time: ${firstLoadTime}`);
-        } else if (savedStartTime) {
-          setStartTime(parseInt(savedStartTime, 10));
-          if (DEBUG_MODE) console.log(`Using puzzle start time: ${savedStartTime}`);
-        } else {
-          // Edge case: Neither time exists but it's the same day
-          const newTime = Date.now();
-          setStartTime(newTime);
-          localStorage.setItem(STORAGE_KEYS.PUZZLE_START_TIME, newTime.toString());
-          localStorage.setItem(firstLoadKey, newTime.toString());
-          if (DEBUG_MODE) console.log(`No times found, creating new: ${newTime}`);
+          if (DEBUG_MODE) console.log(`Using existing first load time: ${firstLoadTime}`);
         }
       }
     } catch (error) {
@@ -73,26 +51,19 @@ export const useSecureTimer = (solved: boolean) => {
 
   /**
    * Calculate elapsed time in seconds
-   * Always uses the earliest recorded time for the day
-   * @returns Time elapsed since earliest puzzle encounter in seconds
+   * Always uses the first load time for the day
+   * @returns Time elapsed since first page load in seconds
    */
   const getElapsedTime = (): number => {
     try {
       const today = getTodayDateString();
-      const savedStartTime = localStorage.getItem(STORAGE_KEYS.PUZZLE_START_TIME);
       const firstLoadTime = localStorage.getItem(`${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`);
       
       let earliestTime = startTime;
       
-      // Find the earliest time between all possibilities
-      if (firstLoadTime && savedStartTime) {
-        const firstLoad = parseInt(firstLoadTime, 10);
-        const puzzleStart = parseInt(savedStartTime, 10);
-        earliestTime = Math.min(firstLoad, puzzleStart);
-      } else if (firstLoadTime) {
+      // Use the first load time if it exists
+      if (firstLoadTime) {
         earliestTime = parseInt(firstLoadTime, 10);
-      } else if (savedStartTime) {
-        earliestTime = parseInt(savedStartTime, 10);
       }
       
       const elapsed = parseFloat(((Date.now() - earliestTime) / 1000).toFixed(3));
