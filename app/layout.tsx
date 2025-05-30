@@ -14,6 +14,9 @@ export const metadata: Metadata = {
     default: "Daily Puzzle Games",
   },
   description: "Daily arithmetic puzzle games to challenge your mind",
+  verification: {
+    google: "_W7qsE12Njou18Gc_VU9ygWW4vfGPdE1c2E_IcrEIi4",
+  },
 };
 
 export default function RootLayout({
