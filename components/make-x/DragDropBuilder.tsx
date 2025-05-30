@@ -33,6 +33,34 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     e.dataTransfer.effectAllowed = "move";
   };
 
+  // Add touch event handlers
+  const handleTouchStart = (
+    e: React.TouchEvent,
+    value: string,
+    type: "number" | "operator" | "bracket"
+  ) => {
+    // Store the data in a data attribute on the element
+    const target = e.currentTarget as HTMLElement;
+    target.dataset.dragData = JSON.stringify({ type, value });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent scrolling while dragging
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    const data = target.dataset.dragData;
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        handleAdd(parsed.value, parsed.type);
+      } catch {
+        return;
+      }
+    }
+  };
+
   const evaluateExpression = (expr: ExpressionItemType[]): number | null => {
     try {
       const exprStr = expr.map((item) => item.value).join("");
@@ -405,6 +433,8 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           className="min-h-[4rem] w-full p-4 rounded-lg border-2 border-dashed border-muted hover:border-primary/50 transition-colors flex flex-wrap items-center justify-center gap-2"
         >
           {expression.length === 0 ? (
@@ -444,6 +474,9 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
               number={num}
               used={usedNumbers[index]}
               onDragStart={(e) => handleDragStart(e, num.toString(), "number")}
+              onTouchStart={(e) =>
+                handleTouchStart(e, num.toString(), "number")
+              }
               onClick={() => handleAdd(num.toString(), "number")}
             />
           ))}
@@ -456,6 +489,13 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
               operator={op}
               onDragStart={(e) =>
                 handleDragStart(
+                  e,
+                  op,
+                  op === "(" || op === ")" ? "bracket" : "operator"
+                )
+              }
+              onTouchStart={(e) =>
+                handleTouchStart(
                   e,
                   op,
                   op === "(" || op === ")" ? "bracket" : "operator"

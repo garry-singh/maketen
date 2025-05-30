@@ -6,11 +6,13 @@ const DraggableNumber: React.FC<DraggableNumberProps> = ({
   number,
   used,
   onDragStart,
+  onTouchStart,
   onClick,
 }) => (
   <button
     draggable={!used}
     onDragStart={onDragStart}
+    onTouchStart={onTouchStart}
     onClick={onClick}
     disabled={used}
     className={cn(

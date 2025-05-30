@@ -5,11 +5,13 @@ import { DraggableOperatorProps } from "@/lib/make-x/interfaces";
 const DraggableOperator: React.FC<DraggableOperatorProps> = ({
   operator,
   onDragStart,
+  onTouchStart,
   onClick,
 }) => (
   <button
     draggable
     onDragStart={onDragStart}
+    onTouchStart={onTouchStart}
     onClick={onClick}
     className={cn(
       "w-12 h-12 md:w-[60px] md:h-[60px] flex items-center justify-center rounded-lg text-lg md:text-2xl font-bold transition-colors",

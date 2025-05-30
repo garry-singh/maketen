@@ -24,12 +24,14 @@ export interface DraggableNumberProps {
   number: number;
   used: boolean;
   onDragStart: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onTouchStart: (e: React.TouchEvent<HTMLButtonElement>) => void;
   onClick: () => void;
 }
 
 export interface DraggableOperatorProps {
   operator: string;
   onDragStart: (e: React.DragEvent<HTMLButtonElement>) => void;
+  onTouchStart: (e: React.TouchEvent<HTMLButtonElement>) => void;
   onClick: () => void;
 }
 

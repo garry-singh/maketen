@@ -49,6 +49,7 @@ export default function MakeX() {
     if (!puzzle) return;
     const timeElapsed = getElapsedTime();
     const streakMessage = solvePuzzle(timeElapsed, exprStr);
+    setFullExpression(exprStr);
     if (streakMessage) {
       toast.success(streakMessage);
     }
