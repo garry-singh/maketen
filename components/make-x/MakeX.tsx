@@ -105,6 +105,8 @@ export default function MakeX() {
       return;
     }
 
+    // Set the full expression before solving
+    setFullExpression(exprStr);
     handleSolve(exprStr);
   };
 
