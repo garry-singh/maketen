@@ -45,6 +45,13 @@ export default function MakeX() {
     setLocalResetTime(formattedString);
   }, []);
 
+  // Set fullExpression from lastSolution when loading a solved puzzle
+  useEffect(() => {
+    if (solved && lastSolution) {
+      setFullExpression(lastSolution);
+    }
+  }, [solved, lastSolution]);
+
   const handleSolve = (exprStr: string) => {
     if (!puzzle) return;
     const timeElapsed = getElapsedTime();
