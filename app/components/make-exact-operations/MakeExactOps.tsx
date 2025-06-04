@@ -97,11 +97,13 @@ export default function MakeExactOps() {
 
   const getShareText = () => {
     if (!currentPuzzle || !solveTime) return "";
-    return `Make Exact Operations ${new Date().toLocaleDateString()}\nTarget: ${
-      currentPuzzle.target
-    }\nNumbers: ${currentPuzzle.numbers.join(", ")}\nTime: ${solveTime.toFixed(
-      2
-    )}s\n${window.location.origin}/make-exact-operations`;
+
+    const formattedTime = solveTime.toFixed(2);
+    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
+
+    return `I solved today's #MakeExactOperations in ${formattedTime}s!${
+      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
+    }\n\nPlay now: https://maketen.vercel.app/make-exact-operations`;
   };
 
   if (!currentPuzzle) return null;
