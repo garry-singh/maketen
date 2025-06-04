@@ -47,3 +47,16 @@ export const SOCIAL_LINKS = {
     RATE_LIMIT_WINDOW: 60000, // 1 minute in milliseconds
     STORAGE_VERSION: '1.0.0',
   } as const;
+
+  // localStorage keys for make exact ops - ensure these are consistent across the application
+  export const MAKE_EXACT_OPS_STORAGE_KEYS = {
+    STREAK: "make_exact_ops_streak",
+    LONGEST_STREAK: "make_exact_ops_longest_streak",
+    SOLVED_TODAY: "make_exact_ops_solved_today",
+    SOLVED_DATE: "make_exact_ops_solved_date",
+    SOLUTION_INPUT: "make_exact_ops_solution_input",
+    SOLUTION_TIME: "make_exact_ops_solution_time",
+    PUZZLE_START_TIME: "make_exact_ops_puzzle_start_time",
+    PUZZLE_DATE: "make_exact_ops_puzzle_date",
+    FIRST_LOAD_TIME: "make_exact_ops_first_load_time"
+  };

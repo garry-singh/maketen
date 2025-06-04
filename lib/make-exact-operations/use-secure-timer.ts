@@ -1,0 +1,83 @@
+import { useState, useEffect } from "react";
+import { MAKE_EXACT_OPS_STORAGE_KEYS, DEBUG_MODE } from "../constants";
+import { getTodayDateString } from "../date-utils";
+
+/**
+ * Custom hook to manage puzzle timer with anti-farming protection
+ * @param solved - Whether puzzle is already solved
+ * @returns Timer state and functions
+ */
+export function useSecureTimer(solved: boolean) {
+  const [startTime, setStartTime] = useState<number>(Date.now());
+  
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const today = getTodayDateString();
+    const firstLoadKey = `${MAKE_EXACT_OPS_STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
+    const savedPuzzleDate = localStorage.getItem(MAKE_EXACT_OPS_STORAGE_KEYS.PUZZLE_DATE);
+    
+    try {
+      // Check if it's a new day
+      if (savedPuzzleDate !== today) {
+        // New day - set current time as first load time
+        const now = Date.now();
+        localStorage.setItem(firstLoadKey, now.toString());
+        localStorage.setItem(MAKE_EXACT_OPS_STORAGE_KEYS.PUZZLE_DATE, today);
+        setStartTime(now);
+        if (DEBUG_MODE) console.log(`New day, set first load time: ${now}`);
+      } else {
+        // Same day - check if we already have a first load time
+        const firstLoadTime = localStorage.getItem(firstLoadKey);
+        
+        if (!firstLoadTime && !solved) {
+          // First time loading the page today and not solved
+          const now = Date.now();
+          localStorage.setItem(firstLoadKey, now.toString());
+          setStartTime(now);
+          if (DEBUG_MODE) console.log(`Set first load time: ${now}`);
+        } else if (firstLoadTime) {
+          // Use existing first load time
+          setStartTime(parseInt(firstLoadTime, 10));
+          if (DEBUG_MODE) console.log(`Using existing first load time: ${firstLoadTime}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error in useSecureTimer:', error);
+      // Fallback to current time if localStorage fails
+      setStartTime(Date.now());
+    }
+  }, [solved]);
+
+  /**
+   * Calculate elapsed time in seconds
+   * Always uses the first load time for the day
+   * @returns Time elapsed since first page load in seconds
+   */
+  const getElapsedTime = (): number => {
+    try {
+      const today = getTodayDateString();
+      const firstLoadTime = localStorage.getItem(`${MAKE_EXACT_OPS_STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`);
+      
+      let earliestTime = startTime;
+      
+      // Use the first load time if it exists
+      if (firstLoadTime) {
+        earliestTime = parseInt(firstLoadTime, 10);
+      }
+      
+      const elapsed = parseFloat(((Date.now() - earliestTime) / 1000).toFixed(3));
+      if (DEBUG_MODE) console.log(`Elapsed time: ${elapsed}s from time: ${earliestTime}`);
+      return elapsed;
+    } catch (error) {
+      console.error('Error calculating elapsed time:', error);
+      // Fallback to current session time if localStorage fails
+      return parseFloat(((Date.now() - startTime) / 1000).toFixed(3));
+    }
+  };
+  
+  return {
+    startTime,
+    getElapsedTime,
+  };
+} 

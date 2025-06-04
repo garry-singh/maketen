@@ -25,6 +25,11 @@ const gameLinks = [
     href: "/make-x",
     description: "Challenge mode",
   },
+  {
+    title: "Make Exact Operations",
+    href: "/make-exact-operations",
+    description: "Find the operators",
+  },
 ];
 
 const Sidebar = () => {
