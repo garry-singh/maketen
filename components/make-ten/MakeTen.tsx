@@ -219,6 +219,7 @@ const MakeTen: React.FC = () => {
         <h1 className="text-4xl font-bold mb-6 lg:text-6xl lg:mb-12">
           Make 10
         </h1>
+
         {!solved && (
           <p className="text-xl text-muted-foreground text-center lg:text-2xl">
             Use only basic operations and all these numbers exactly once to make
@@ -249,13 +250,44 @@ const MakeTen: React.FC = () => {
 
         {/* Input Field */}
         {solved ? (
-          <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
-            Come back at {localResetTime} for a new puzzle!{" "}
-            <Link href="/make-x">
-              <a className="text-blue-500 hover:underline">Play Make X</a>
-            </Link>{" "}
-            until then!
-          </p>
+          <>
+            {/* New Game Mode Announcement */}
+            <div className="w-full max-w-2xl mb-8 p-4 bg-primary/10 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🎮</span>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    New Game Mode Available!
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Try our new{" "}
+                    <Link
+                      href="/make-exact-operations"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Make Exact Operations
+                    </Link>{" "}
+                    mode - find the operators to reach the target number!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
+              Come back at {localResetTime} for a new puzzle!{" "}
+              <Link
+                href="/make-exact-operations"
+                className="text-primary hover:underline"
+              >
+                Try Make Exact Operations
+              </Link>{" "}
+              or{" "}
+              <Link href="/make-x" className="text-primary hover:underline">
+                Make X
+              </Link>{" "}
+              until then!
+            </p>
+          </>
         ) : (
           <Input
             type="text"

@@ -3,7 +3,7 @@ export const SOCIAL_LINKS = {
   };
   
   export const STREAK_TIME_LIMIT = 45; // Seconds
-  export const STREAK_TIME_LIMIT_MAKE_X = 180; // Seconds
+  export const STREAK_TIME_LIMIT_MAKE_X = 60; // Seconds
   export const TARGET_NUMBER = 10;
   
   export const NUMBERS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];

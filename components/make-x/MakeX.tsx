@@ -215,10 +215,10 @@ export default function MakeX() {
 
       <div className="space-y-3 text-center mb-8">
         <p className="text-lg text-muted-foreground">
-          Current Streak (under 3 min): {streaks.streak}
+          Current Streak (under 1 min): {streaks.streak}
         </p>
         <p className="text-lg text-muted-foreground">
-          Longest Streak (under 3 min): {streaks.longestStreak}
+          Longest Streak (under 1 min): {streaks.longestStreak}
         </p>
       </div>
 
