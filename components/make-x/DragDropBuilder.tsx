@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { OPERATORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { tryEvaluateArithmetic } from "@/lib/expression-eval";
 import { toast } from "sonner";
 import {
   DragDropBuilderProps,
@@ -21,6 +22,10 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
   onUsedNumbersChange,
   onFullExpressionChange,
 }) => {
+  // Only ever incremented from event handlers, so ids stay stable across renders
+  const nextItemId = useRef(0);
+  const createItemId = () => `item-${nextItemId.current++}`;
+
   const handleDragStart = (
     e: React.DragEvent,
     value: string,
@@ -61,15 +66,8 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     }
   };
 
-  const evaluateExpression = (expr: ExpressionItemType[]): number | null => {
-    try {
-      const exprStr = expr.map((item) => item.value).join("");
-      const result = eval(exprStr);
-      return typeof result === "number" && isFinite(result) ? result : null;
-    } catch {
-      return null;
-    }
-  };
+  const evaluateExpression = (expr: ExpressionItemType[]): number | null =>
+    tryEvaluateArithmetic(expr.map((item) => item.value).join(""));
 
   const findNewCompleteExpression = (
     expr: ExpressionItemType[]
@@ -161,7 +159,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
       type: "number",
       value: result.toString(),
       used: true,
-      id: Math.random().toString(),
+      id: createItemId(),
       isGrouped: true,
       locked: true,
       originalExpression: subExpr,
@@ -186,7 +184,7 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
       type,
       value,
       used: type === "number",
-      id: Math.random().toString(),
+      id: createItemId(),
     };
 
     // Create new expression array
@@ -383,17 +381,9 @@ const DragDropBuilder: React.FC<DragDropBuilderProps> = ({
     onFullExpressionChange(getFullExpression(newExpression));
   };
 
-  const calculateCurrentValue = () => {
-    const exprStr = expression.map((item) => item.value).join("");
-
-    try {
-      return eval(exprStr);
-    } catch {
-      return null;
-    }
-  };
-
-  const currentValue = calculateCurrentValue();
+  const currentValue = tryEvaluateArithmetic(
+    expression.map((item) => item.value).join("")
+  );
 
   // Filter out the backspace operator
   const validOperators = OPERATORS.filter((op) => op !== "⌫");

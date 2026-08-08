@@ -1,106 +1,107 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { STORAGE_KEYS, STREAK_TIME_LIMIT, DEBUG_MODE } from "../constants";
 import { getTodayDateString, getYesterdayDateString } from "../date-utils";
 import { Streaks } from "../types";
+import { useClientValue } from "../use-client-value";
+
+interface GameState {
+  streak: number;
+  longestStreak: number;
+  solved: boolean;
+  solveTime: number | null;
+  lastSolution: string;
+}
+
+const EMPTY_GAME_STATE: GameState = {
+  streak: 0,
+  longestStreak: 0,
+  solved: false,
+  solveTime: null,
+  lastSolution: "",
+};
+
+/**
+ * Reads today's game state out of localStorage. Browser-only - the server
+ * render falls back to EMPTY_GAME_STATE.
+ */
+function readStoredGameState(): GameState {
+  try {
+    // Test basic functionality
+    localStorage.setItem('__test', 'working');
+    const testValue = localStorage.getItem('__test');
+    if (DEBUG_MODE) console.log('localStorage test:', testValue);
+    localStorage.removeItem('__test');
+
+    const today = getTodayDateString();
+    const yesterday = getYesterdayDateString();
+
+    // Get stored values (handle null/undefined cases)
+    const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK) || '0', 10);
+    const savedLongestStreak = parseInt(localStorage.getItem(STORAGE_KEYS.LONGEST_STREAK) || '0', 10);
+    const savedSolvedDate = localStorage.getItem(STORAGE_KEYS.SOLVED_DATE);
+    const savedSolvedToday = localStorage.getItem(STORAGE_KEYS.SOLVED_TODAY) === "true";
+
+    // Get saved solution details
+    const savedSolutionInput = localStorage.getItem(STORAGE_KEYS.SOLUTION_INPUT) || "";
+    const savedSolutionTime = localStorage.getItem(STORAGE_KEYS.SOLUTION_TIME);
+
+    if (DEBUG_MODE) {
+      console.log('Loading from storage:', {
+        savedStreak,
+        savedLongestStreak,
+        savedSolvedDate,
+        savedSolvedToday,
+        savedSolutionInput,
+        savedSolutionTime,
+        today,
+        yesterday
+      });
+    }
+
+    // If we've solved today, just mark as solved and use stored streak values
+    if (savedSolvedToday && savedSolvedDate === today) {
+      return {
+        streak: savedStreak,
+        longestStreak: savedLongestStreak,
+        solved: true,
+        solveTime: savedSolutionTime ? parseFloat(savedSolutionTime) : null,
+        lastSolution: savedSolutionInput,
+      };
+    }
+
+    // If we missed a day (not yesterday and not today), reset streak
+    if (savedSolvedDate && savedSolvedDate !== today && savedSolvedDate !== yesterday) {
+      if (DEBUG_MODE) console.log('Missed days detected, resetting streak');
+      localStorage.setItem(STORAGE_KEYS.STREAK, '0');
+      return { ...EMPTY_GAME_STATE, longestStreak: savedLongestStreak };
+    }
+
+    // Otherwise, use the stored streak values and start the day unsolved
+    return {
+      ...EMPTY_GAME_STATE,
+      streak: savedStreak,
+      longestStreak: savedLongestStreak,
+    };
+  } catch (error) {
+    console.error('localStorage error:', error);
+    return EMPTY_GAME_STATE;
+  }
+}
 
 /**
  * Simple, direct approach to managing game state with localStorage
  */
 export function useSimpleGameState() {
-  // State to track UI values
-  const [streak, setStreak] = useState(0);
-  const [longestStreak, setLongestStreak] = useState(0);
-  const [solved, setSolved] = useState(false);
-  const [solveTime, setSolveTime] = useState<number | null>(null);
-  const [lastSolution, setLastSolution] = useState<string>("");
-  
-  // Load initial state from localStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    
-    try {
-      // Test basic functionality
-      localStorage.setItem('__test', 'working');
-      const testValue = localStorage.getItem('__test');
-      if (DEBUG_MODE) console.log('localStorage test:', testValue);
-      localStorage.removeItem('__test');
-      
-      const today = getTodayDateString();
-      const yesterday = getYesterdayDateString();
-      
-      // Get stored values (handle null/undefined cases)
-      const savedStreak = parseInt(localStorage.getItem(STORAGE_KEYS.STREAK) || '0', 10);
-      const savedLongestStreak = parseInt(localStorage.getItem(STORAGE_KEYS.LONGEST_STREAK) || '0', 10);
-      const savedSolvedDate = localStorage.getItem(STORAGE_KEYS.SOLVED_DATE);
-      const savedSolvedToday = localStorage.getItem(STORAGE_KEYS.SOLVED_TODAY) === "true";
-      
-      // Get saved solution details
-      const savedSolutionInput = localStorage.getItem(STORAGE_KEYS.SOLUTION_INPUT) || "";
-      const savedSolutionTime = localStorage.getItem(STORAGE_KEYS.SOLUTION_TIME);
-      
-      if (DEBUG_MODE) {
-        console.log('Loading from storage:', {
-          savedStreak,
-          savedLongestStreak,
-          savedSolvedDate,
-          savedSolvedToday,
-          savedSolutionInput,
-          savedSolutionTime,
-          today,
-          yesterday
-        });
-      }
-      
-      // If we've solved today, just mark as solved and use stored streak values
-      if (savedSolvedToday && savedSolvedDate === today) {
-        setSolved(true);
-        setStreak(savedStreak);
-        setLongestStreak(savedLongestStreak);
-        if (savedSolutionInput) {
-          setLastSolution(savedSolutionInput);
-        }
-        if (savedSolutionTime) {
-          setSolveTime(parseFloat(savedSolutionTime));
-        }
-        return;
-      }
-      
-      // If we missed a day (not yesterday and not today), reset streak
-      if (savedSolvedDate && savedSolvedDate !== today && savedSolvedDate !== yesterday) {
-        if (DEBUG_MODE) console.log('Missed days detected, resetting streak');
-        setStreak(0);
-        setLongestStreak(savedLongestStreak);
-        localStorage.setItem(STORAGE_KEYS.STREAK, '0');
-      } else {
-        // Otherwise, use the stored streak values
-        setStreak(savedStreak);
-        setLongestStreak(savedLongestStreak);
-      }
-      
-      // Mark as unsolved for a new day
-      setSolved(false);
-      setLastSolution("");
-      setSolveTime(null);
-    } catch (error) {
-      console.error('localStorage error:', error);
-    }
-  }, []);
+  // What was persisted when the page loaded
+  const storedState = useClientValue(readStoredGameState, EMPTY_GAME_STATE);
+  // Anything that happened since (solving, clearing) takes precedence
+  const [updatedState, setUpdatedState] = useState<GameState | null>(null);
 
-  // Sync streaks to localStorage whenever they change
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    
-    localStorage.setItem(STORAGE_KEYS.STREAK, streak.toString());
-    localStorage.setItem(STORAGE_KEYS.LONGEST_STREAK, longestStreak.toString());
-  }, [streak, longestStreak]);
+  const { streak, longestStreak, solved, solveTime, lastSolution } =
+    updatedState ?? storedState;
 
   const solvePuzzle = (timeElapsed: number, solutionInput: string): string => {
     if (solved) return ""; // Already solved today
-
-    // Record the solve time and solution
-    setSolveTime(timeElapsed);
-    setSolved(true);
-    setLastSolution(solutionInput);
 
     const today = getTodayDateString();
     let newStreak = streak;
@@ -110,7 +111,7 @@ export function useSimpleGameState() {
     if (timeElapsed <= STREAK_TIME_LIMIT) {
       // Fast enough - increment streak
       newStreak = streak + 1;
-      
+
       if (newStreak === 1) {
         streakMessage = "🎯 Streak started! Come back tomorrow to continue!";
       } else if (newStreak > longestStreak) {
@@ -128,8 +129,13 @@ export function useSimpleGameState() {
     const newLongestStreak = Math.max(newStreak, longestStreak);
 
     // Update UI state
-    setStreak(newStreak);
-    setLongestStreak(newLongestStreak);
+    setUpdatedState({
+      streak: newStreak,
+      longestStreak: newLongestStreak,
+      solved: true,
+      solveTime: timeElapsed,
+      lastSolution: solutionInput,
+    });
 
     // Update localStorage
     try {
@@ -148,7 +154,7 @@ export function useSimpleGameState() {
 
   const resetGameState = () => {
     if (typeof window === "undefined") return;
-    
+
     // Reset all localStorage values
     Object.values(STORAGE_KEYS).forEach(key => {
       try {
@@ -157,13 +163,9 @@ export function useSimpleGameState() {
         console.error(`Error removing ${key}:`, e);
       }
     });
-    
+
     // Reset state
-    setStreak(0);
-    setLongestStreak(0);
-    setSolved(false);
-    setSolveTime(null);
-    setLastSolution("");
+    setUpdatedState(EMPTY_GAME_STATE);
   };
 
   return {

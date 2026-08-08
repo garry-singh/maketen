@@ -1,6 +1,7 @@
 import { MakeTenPuzzle } from "../types";
 import { predefinedPuzzles } from "../../app/makeTenPuzzles";
 import { getTodayDateString } from "../date-utils";
+import { evaluateArithmetic } from "../expression-eval";
 
 /**
  * Permutes an array of numbers
@@ -52,7 +53,7 @@ function attemptGeneratePuzzle(
     for (const opSet of operators.map((op) => [op, op, op])) {
       const expr = `(${numSet[0]} ${opSet[0]} ${numSet[1]}) ${opSet[1]} ${numSet[2]} ${opSet[2]} ${numSet[3]}`;
       try {
-        if (eval(expr) === 10) {
+        if (evaluateArithmetic(expr) === 10) {
           return { numbers: numSet, solution: expr };
         }
       } catch {

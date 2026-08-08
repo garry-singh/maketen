@@ -3,48 +3,58 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { STORAGE_KEYS, DEBUG_MODE } from "@/lib/constants";
 import { getTodayDateString, getYesterdayDateString } from "@/lib/date-utils";
+import { useClientValue } from "@/lib/use-client-value";
 
 interface DebuggerProps {
   className?: string;
 }
 
+const EMPTY_STORAGE: Record<string, string> = {};
+
+const readStorageData = (): Record<string, string> => {
+  const data: Record<string, string> = {};
+
+  try {
+    // Get all relevant localStorage values
+    Object.values(STORAGE_KEYS).forEach((key) => {
+      data[key] = localStorage.getItem(key) || "null";
+    });
+
+    // Get first load time for today
+    const today = getTodayDateString();
+    const firstLoadKey = `${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
+    data[firstLoadKey] = localStorage.getItem(firstLoadKey) || "null";
+
+    // Add date info
+    data["TODAY"] = today;
+    data["YESTERDAY"] = getYesterdayDateString();
+
+    if (DEBUG_MODE) console.log("Debugger refreshed:", data);
+  } catch (error) {
+    console.error("Error refreshing debugger:", error);
+  }
+
+  return data;
+};
+
 /**
  * Enhanced LocalStorage debugger with auto-refresh
  */
 const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
-  const [storageData, setStorageData] = useState<Record<string, string>>({});
+  const initialData = useClientValue(readStorageData, EMPTY_STORAGE);
+  const [refreshedData, setRefreshedData] = useState<Record<
+    string,
+    string
+  > | null>(null);
+  const storageData = refreshedData ?? initialData;
 
   const refreshData = useCallback(() => {
     if (typeof window === "undefined") return;
-
-    const data: Record<string, string> = {};
-
-    try {
-      // Get all relevant localStorage values
-      Object.values(STORAGE_KEYS).forEach((key) => {
-        data[key] = localStorage.getItem(key) || "null";
-      });
-
-      // Get first load time for today
-      const today = getTodayDateString();
-      const firstLoadKey = `${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
-      data[firstLoadKey] = localStorage.getItem(firstLoadKey) || "null";
-
-      // Add date info
-      data["TODAY"] = getTodayDateString();
-      data["YESTERDAY"] = getYesterdayDateString();
-
-      setStorageData(data);
-      if (DEBUG_MODE) console.log("Debugger refreshed:", data);
-    } catch (error) {
-      console.error("Error refreshing debugger:", error);
-    }
+    setRefreshedData(readStorageData());
   }, []);
 
-  // Initial load and periodic refresh
+  // Periodic refresh
   useEffect(() => {
-    refreshData();
-
     // Set up storage event listener for changes
     const handleStorageChange = () => {
       if (DEBUG_MODE) console.log("Storage changed, refreshing debugger");

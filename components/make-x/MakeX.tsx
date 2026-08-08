@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Toaster, toast } from "sonner";
 import { ModeToggle } from "@/app/components/mode-toggle";
 import LoadingErrorView from "@/components/LoadingErrorView";
@@ -16,13 +16,23 @@ import { useSimpleGameState } from "@/lib/make-x/use-simple-game-state";
 import { useSecureTimer } from "@/lib/make-x/use-secure-timer";
 import Link from "next/link";
 import { generateDailyMakeXPuzzle } from "@/lib/make-x/puzzle-generator";
+import { useClientValue } from "@/lib/use-client-value";
+import { tryEvaluateArithmetic } from "@/lib/expression-eval";
+
+const NO_PUZZLE: MakeXPuzzle | null = null;
 
 export default function MakeX() {
-  const [puzzle, setPuzzle] = useState<MakeXPuzzle | null>(null);
+  // Both depend on the current date and the visitor's time zone, so they can
+  // only be resolved in the browser - this page is prerendered at build time.
+  const puzzle = useClientValue(generateDailyMakeXPuzzle, NO_PUZZLE);
+  const localResetTime = useClientValue(
+    () => getNextPuzzleTime().formattedString,
+    ""
+  );
+
   const [expression, setExpression] = useState<ExpressionItem[]>([]);
-  const [usedNumbers, setUsedNumbers] = useState<boolean[]>([]);
-  const [localResetTime, setLocalResetTime] = useState<string>("");
-  const [fullExpression, setFullExpression] = useState<string>("");
+  const [trackedUsage, setUsedNumbers] = useState<boolean[]>([]);
+  const [enteredExpression, setFullExpression] = useState<string | null>(null);
 
   const {
     streaks,
@@ -35,22 +45,15 @@ export default function MakeX() {
 
   const { getElapsedTime } = useSecureTimer(solved);
 
-  useEffect(() => {
-    const newPuzzle = generateDailyMakeXPuzzle();
-    setPuzzle(newPuzzle);
-    setUsedNumbers(new Array(newPuzzle.numbers.length).fill(false));
+  // Until the player uses a number, every slot in today's puzzle is unused
+  const numberCount = puzzle?.numbers.length ?? 0;
+  const usedNumbers =
+    trackedUsage.length === numberCount
+      ? trackedUsage
+      : new Array<boolean>(numberCount).fill(false);
 
-    // Set up reset time display
-    const { formattedString } = getNextPuzzleTime();
-    setLocalResetTime(formattedString);
-  }, []);
-
-  // Set fullExpression from lastSolution when loading a solved puzzle
-  useEffect(() => {
-    if (solved && lastSolution) {
-      setFullExpression(lastSolution);
-    }
-  }, [solved, lastSolution]);
+  // A solved puzzle falls back to the solution stored from an earlier visit
+  const fullExpression = enteredExpression ?? (solved ? lastSolution : "");
 
   const handleSolve = (exprStr: string) => {
     if (!puzzle) return;
@@ -67,19 +70,14 @@ export default function MakeX() {
     resetGameState();
     // Reset the expression and used numbers in DragDropBuilder
     setExpression([]);
+    setFullExpression(null);
     if (puzzle) {
       setUsedNumbers(new Array(puzzle.numbers.length).fill(false));
     }
   };
 
-  const calculateCurrentValue = () => {
-    const exprStr = expression.map((item) => item.value).join("");
-    try {
-      return eval(exprStr);
-    } catch {
-      return null;
-    }
-  };
+  const calculateCurrentValue = () =>
+    tryEvaluateArithmetic(expression.map((item) => item.value).join(""));
 
   const handleSubmit = () => {
     console.log("Submit button clicked");

@@ -1,4 +1,5 @@
 import { ValidationResult } from "../types";
+import { evaluateArithmetic } from "../expression-eval";
 
 /**
  * Validates a mathematical expression
@@ -68,7 +69,7 @@ export const validateResult = (
   target: number = 10
 ): ValidationResult => {
   try {
-    if (eval(expression) === target) {
+    if (evaluateArithmetic(expression) === target) {
       return { isValid: true };
     }
     return { isValid: false, error: "Incorrect. Try again!" };

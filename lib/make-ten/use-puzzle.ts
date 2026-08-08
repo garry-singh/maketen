@@ -1,36 +1,50 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MakeTenPuzzle } from "../types";
 import { generateDailyPuzzle } from "./puzzle-generator";
 import { VALID_KEYS } from "../constants";
+import { useClientValue } from "../use-client-value";
 import { toast } from "sonner";
+
+interface PuzzleLoad {
+  puzzle: MakeTenPuzzle | null;
+  error: string | null;
+}
+
+// Nothing is loaded during the server render, so the UI starts out loading
+const PENDING_PUZZLE: PuzzleLoad = { puzzle: null, error: null };
+
+const loadDailyPuzzle = (): PuzzleLoad => {
+  try {
+    return { puzzle: generateDailyPuzzle(), error: null };
+  } catch (err) {
+    console.error("Error generating puzzle:", err);
+    return {
+      puzzle: null,
+      error:
+        "Failed to generate today's puzzle. Please try refreshing the page.",
+    };
+  }
+};
 
 /**
  * Custom hook to manage puzzle state
  * @returns Puzzle state and related functions
  */
 export const usePuzzle = () => {
-  const [puzzle, setPuzzle] = useState<MakeTenPuzzle | null>(null);
-  const [userInput, setUserInput] = useState<string>("");
-  const [usedNumbers, setUsedNumbers] = useState<number[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // The puzzle depends on the current date, so it can only be built in the
+  // browser - the pages are prerendered at build time.
+  const { puzzle, error } = useClientValue(loadDailyPuzzle, PENDING_PUZZLE);
+  const isLoading = puzzle === null && error === null;
 
-  // Load puzzle
-  useEffect(() => {
-    try {
-      const generatedPuzzle = generateDailyPuzzle();
-      setPuzzle(generatedPuzzle);
-      setUsedNumbers(new Array(generatedPuzzle.numbers.length).fill(0));
-      setIsLoading(false);
-      setError(null);
-    } catch (err) {
-      setError(
-        "Failed to generate today's puzzle. Please try refreshing the page."
-      );
-      setIsLoading(false);
-      console.error("Error generating puzzle:", err);
-    }
-  }, []);
+  const [userInput, setUserInput] = useState<string>("");
+  const [trackedUsage, setUsedNumbers] = useState<number[]>([]);
+
+  // Until the player touches a number, every slot in today's puzzle is unused
+  const numberCount = puzzle?.numbers.length ?? 0;
+  const usedNumbers =
+    trackedUsage.length === numberCount
+      ? trackedUsage
+      : new Array<number>(numberCount).fill(0);
 
   /**
    * Handle keyboard input

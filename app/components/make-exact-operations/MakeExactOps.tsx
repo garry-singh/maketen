@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Toaster, toast } from "sonner";
 import { ModeToggle } from "@/app/components/mode-toggle";
 import { useSimpleGameState } from "@/lib/make-exact-operations/use-simple-game-state";
@@ -11,13 +11,23 @@ import Link from "next/link";
 import ShareOptions from "@/components/ShareOptions";
 import { generateDailyExactOpsPuzzle } from "@/lib/make-exact-operations/puzzle-generator";
 import ExpressionBuilder from "./ExpressionBuilder";
+import { useClientValue } from "@/lib/use-client-value";
+import { evaluateArithmetic } from "@/lib/expression-eval";
+
+type ExactOpsPuzzle = ReturnType<typeof generateDailyExactOpsPuzzle>;
+
+const NO_PUZZLE: ExactOpsPuzzle | null = null;
 
 export default function MakeExactOps() {
-  const [currentPuzzle, setCurrentPuzzle] = useState<ReturnType<
-    typeof generateDailyExactOpsPuzzle
-  > | null>(null);
-  const [selectedOperators, setSelectedOperators] = useState<string[]>([]);
-  const [localResetTime, setLocalResetTime] = useState<string>("");
+  // Both depend on the current date and the visitor's time zone, so they can
+  // only be resolved in the browser - this page is prerendered at build time.
+  const currentPuzzle = useClientValue(generateDailyExactOpsPuzzle, NO_PUZZLE);
+  const localResetTime = useClientValue(
+    () => getNextPuzzleTime().formattedString,
+    ""
+  );
+
+  const [chosenOperators, setSelectedOperators] = useState<string[]>([]);
 
   const {
     streaks,
@@ -30,16 +40,12 @@ export default function MakeExactOps() {
 
   const { getElapsedTime } = useSecureTimer(solved);
 
-  useEffect(() => {
-    // Generate today's puzzle
-    const puzzle = generateDailyExactOpsPuzzle();
-    setCurrentPuzzle(puzzle);
-    setSelectedOperators(new Array(puzzle.numbers.length - 1).fill(""));
-
-    // Set up reset time display
-    const { formattedString } = getNextPuzzleTime();
-    setLocalResetTime(formattedString);
-  }, []);
+  // One slot between each pair of numbers, all empty until the player fills them
+  const slotCount = currentPuzzle ? currentPuzzle.numbers.length - 1 : 0;
+  const selectedOperators =
+    chosenOperators.length === slotCount
+      ? chosenOperators
+      : new Array<string>(slotCount).fill("");
 
   const handleOperatorSelect = (operator: string, index: number) => {
     if (solved) return;
@@ -73,7 +79,7 @@ export default function MakeExactOps() {
     }
 
     try {
-      const result = eval(expression);
+      const result = evaluateArithmetic(expression);
       if (result === currentPuzzle.target) {
         const timeElapsed = getElapsedTime();
         const message = solvePuzzle(timeElapsed, expression);

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import DraggableOperator from "./DraggableOperator";
 import { cn } from "@/lib/utils";
+import { tryEvaluateArithmetic } from "@/lib/expression-eval";
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +21,27 @@ interface ExpressionBuilderProps {
 
 const operators = ["+", "-", "*", "/"];
 
+/**
+ * Builds the expression from the numbers and the operators dropped between
+ * them, and evaluates it. Returns null until every slot is filled.
+ */
+const evaluateSlots = (
+  numbers: number[],
+  selectedOperators: string[]
+): number | null => {
+  if (selectedOperators.some((op) => !op)) return null;
+
+  let expression = "";
+  for (let i = 0; i < numbers.length; i++) {
+    expression += numbers[i];
+    if (i < selectedOperators.length) {
+      expression += selectedOperators[i];
+    }
+  }
+
+  return tryEvaluateArithmetic(expression);
+};
+
 const ExpressionBuilder: React.FC<ExpressionBuilderProps> = ({
   numbers,
   selectedOperators,
@@ -28,33 +50,9 @@ const ExpressionBuilder: React.FC<ExpressionBuilderProps> = ({
   solved,
   target,
 }) => {
-  const [currentResult, setCurrentResult] = useState<number | null>(null);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
 
-  // Calculate current result whenever operators change
-  useEffect(() => {
-    if (selectedOperators.some((op) => !op)) {
-      setCurrentResult(null);
-      return;
-    }
-
-    let expression = "";
-    for (let i = 0; i < numbers.length; i++) {
-      expression += numbers[i];
-      if (i < selectedOperators.length) {
-        expression += selectedOperators[i];
-      }
-    }
-
-    try {
-      const result = eval(expression);
-      setCurrentResult(
-        typeof result === "number" && isFinite(result) ? result : null
-      );
-    } catch {
-      setCurrentResult(null);
-    }
-  }, [numbers, selectedOperators]);
+  const currentResult = evaluateSlots(numbers, selectedOperators);
 
   const handleDragStart = (e: React.DragEvent, operator: string) => {
     e.dataTransfer.setData("application/make-exact-operations", operator);

@@ -1,18 +1,21 @@
 import React from "react";
+import { useClientValue } from "@/lib/use-client-value";
+
+const EMPTY_STORAGE: Record<string, string> = {};
+
+const readStorage = (): Record<string, string> => {
+  const items: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) {
+      items[key] = localStorage.getItem(key) || "";
+    }
+  }
+  return items;
+};
 
 const LocalStorageDebugger: React.FC = () => {
-  const [storage, setStorage] = React.useState<Record<string, string>>({});
-
-  React.useEffect(() => {
-    const items: Record<string, string> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        items[key] = localStorage.getItem(key) || "";
-      }
-    }
-    setStorage(items);
-  }, []);
+  const storage = useClientValue(readStorage, EMPTY_STORAGE);
 
   return (
     <div className="fixed bottom-4 right-4 p-4 bg-card rounded-lg shadow-lg max-w-md">

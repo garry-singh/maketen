@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
@@ -11,6 +11,7 @@ import { usePuzzle } from "@/lib/make-ten/use-puzzle";
 import { useSimpleGameState } from "@/lib/make-ten/use-simple-game-state";
 import { useSecureTimer } from "@/lib/make-ten/use-secure-timer";
 import { getNextPuzzleTime } from "@/lib/date-utils";
+import { useClientValue } from "@/lib/use-client-value";
 import {
   validateExpression,
   validateNumbersUsed,
@@ -51,14 +52,11 @@ const MakeTen: React.FC = () => {
   // Use secure timer to prevent streak farming
   const { getElapsedTime } = useSecureTimer(solved);
 
-  // State for reset time display
-  const [localResetTime, setLocalResetTime] = useState<string>("");
-
-  // Set up reset time display
-  useEffect(() => {
-    const { formattedString } = getNextPuzzleTime();
-    setLocalResetTime(formattedString);
-  }, []);
+  // Reset time display - depends on the visitor's time zone
+  const localResetTime = useClientValue(
+    () => getNextPuzzleTime().formattedString,
+    ""
+  );
 
   // Sync userInput with lastSolution when refreshing a solved puzzle
   useEffect(() => {
