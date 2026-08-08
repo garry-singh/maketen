@@ -1,30 +1,33 @@
 "use client";
 
 import React, { useState } from "react";
-import { Toaster, toast } from "sonner";
-import { ModeToggle } from "@/app/components/mode-toggle";
-import LoadingErrorView from "@/components/LoadingErrorView";
+import { toast } from "sonner";
+import Link from "next/link";
+import { ModeToggle } from "@/components/mode-toggle";
 import ShareOptions from "@/components/ShareOptions";
-import LocalStorageDebugger from "@/components/make-x/LocalStorageDebugger";
-import InfoDialog from "@/components/make-x/InfoDialog";
+import LocalStorageDebugger from "@/components/game/LocalStorageDebugger";
+import StreakSummary from "@/components/game/StreakSummary";
+import MakeXInfoDialog from "@/components/make-x/InfoDialog";
 import DragDropBuilder from "./DragDropBuilder";
 import { cn } from "@/lib/utils";
 import { ExpressionItem } from "@/lib/make-x/interfaces";
 import { getNextPuzzleTime } from "@/lib/date-utils";
 import { MakeXPuzzle } from "@/lib/types";
-import { useSimpleGameState } from "@/lib/make-x/use-simple-game-state";
-import { useSecureTimer } from "@/lib/make-x/use-secure-timer";
-import Link from "next/link";
-import { generateDailyMakeXPuzzle } from "@/lib/make-x/puzzle-generator";
+import { DEBUG_MODE } from "@/lib/constants";
+import { MAKE_X_GAME } from "@/lib/games/config";
+import { useGameState } from "@/lib/games/use-game-state";
+import { useSecureTimer } from "@/lib/games/use-secure-timer";
+import { buildShareText } from "@/lib/games/share-text";
 import { useClientValue } from "@/lib/use-client-value";
 import { tryEvaluateArithmetic } from "@/lib/expression-eval";
 
-const NO_PUZZLE: MakeXPuzzle | null = null;
+interface MakeXProps {
+  /** Today's puzzle, resolved on the server */
+  puzzle: MakeXPuzzle;
+}
 
-export default function MakeX() {
-  // Both depend on the current date and the visitor's time zone, so they can
-  // only be resolved in the browser - this page is prerendered at build time.
-  const puzzle = useClientValue(generateDailyMakeXPuzzle, NO_PUZZLE);
+export default function MakeX({ puzzle }: MakeXProps) {
+  // Depends on the visitor's time zone, so it can only be resolved in the browser
   const localResetTime = useClientValue(
     () => getNextPuzzleTime().formattedString,
     ""
@@ -41,22 +44,20 @@ export default function MakeX() {
     solvePuzzle,
     resetGameState,
     lastSolution,
-  } = useSimpleGameState();
+  } = useGameState(MAKE_X_GAME);
 
-  const { getElapsedTime } = useSecureTimer(solved);
+  const { getElapsedTime } = useSecureTimer(MAKE_X_GAME, solved);
 
   // Until the player uses a number, every slot in today's puzzle is unused
-  const numberCount = puzzle?.numbers.length ?? 0;
   const usedNumbers =
-    trackedUsage.length === numberCount
+    trackedUsage.length === puzzle.numbers.length
       ? trackedUsage
-      : new Array<boolean>(numberCount).fill(false);
+      : new Array<boolean>(puzzle.numbers.length).fill(false);
 
   // A solved puzzle falls back to the solution stored from an earlier visit
   const fullExpression = enteredExpression ?? (solved ? lastSolution : "");
 
   const handleSolve = (exprStr: string) => {
-    if (!puzzle) return;
     const timeElapsed = getElapsedTime();
     const streakMessage = solvePuzzle(timeElapsed, exprStr);
     setFullExpression(exprStr);
@@ -66,23 +67,17 @@ export default function MakeX() {
   };
 
   const handleClear = () => {
-    console.log("Clear button clicked");
     resetGameState();
     // Reset the expression and used numbers in DragDropBuilder
     setExpression([]);
     setFullExpression(null);
-    if (puzzle) {
-      setUsedNumbers(new Array(puzzle.numbers.length).fill(false));
-    }
+    setUsedNumbers(new Array(puzzle.numbers.length).fill(false));
   };
 
   const calculateCurrentValue = () =>
     tryEvaluateArithmetic(expression.map((item) => item.value).join(""));
 
   const handleSubmit = () => {
-    console.log("Submit button clicked");
-    if (!puzzle) return;
-
     const exprStr = expression.map((item) => item.value).join("");
 
     if (expression.length === 0) {
@@ -115,42 +110,21 @@ export default function MakeX() {
     handleSolve(exprStr);
   };
 
-  const getShareText = () => {
-    if (!fullExpression || !solveTime) return "";
-
-    const formattedTime = solveTime.toFixed(2);
-    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
-
-    const maskedSolution = fullExpression
-      .replace(/[0-9]/g, "⬛")
-      .replace(/[\(\)]/g, "⬜");
-
-    const coloredOperators = maskedSolution
-      .replace(/[+]/g, "➕")
-      .replace(/[-]/g, "➖")
-      .replace(/[*]/g, "✖️")
-      .replace(/[/]/g, "➗");
-
-    return `I solved today's #MakeX in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
-      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
-    }\n\nPlay now: https://maketen.vercel.app/make-x`;
-  };
-
-  if (!puzzle) {
-    return <LoadingErrorView />;
-  }
+  const getShareText = () =>
+    fullExpression && solveTime
+      ? buildShareText({
+          hashtag: "MakeX",
+          solveTime,
+          streak: streaks.streak,
+          solution: fullExpression,
+          url: "https://maketen.vercel.app/make-x",
+        })
+      : "";
 
   return (
     <div className="flex flex-col items-center min-h-screen w-screen bg-background">
-      <Toaster
-        position="bottom-right"
-        closeButton
-        richColors
-        theme={undefined}
-        className="sm:max-w-[420px]"
-      />
       <div className="fixed top-4 right-4 flex items-center gap-2">
-        <InfoDialog />
+        <MakeXInfoDialog />
         <ModeToggle />
       </div>
 
@@ -211,14 +185,7 @@ export default function MakeX() {
         </div>
       )}
 
-      <div className="space-y-3 text-center mb-8">
-        <p className="text-lg text-muted-foreground">
-          Current Streak (under 1 min): {streaks.streak}
-        </p>
-        <p className="text-lg text-muted-foreground">
-          Longest Streak (under 1 min): {streaks.longestStreak}
-        </p>
-      </div>
+      <StreakSummary game={MAKE_X_GAME} streaks={streaks} className="mb-8" />
 
       {solved && solveTime && (
         <ShareOptions
@@ -228,7 +195,7 @@ export default function MakeX() {
         />
       )}
 
-      {process.env.NODE_ENV === "development" && <LocalStorageDebugger />}
+      {DEBUG_MODE && <LocalStorageDebugger game={MAKE_X_GAME} />}
     </div>
   );
 }

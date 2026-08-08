@@ -1,4 +1,5 @@
 import MakeTen from "@/components/make-ten/MakeTen";
+import { generateDailyPuzzle } from "@/lib/make-ten/puzzle-generator";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -6,6 +7,10 @@ export const metadata: Metadata = {
   description: "A daily number puzzle game where you make 10",
 };
 
+// Puzzles roll over at midnight UTC; revalidating keeps the static page in step
+// without rebuilding, and keeps the puzzle catalogue out of the client bundle.
+export const revalidate = 60;
+
 export default function Home() {
-  return <MakeTen />;
+  return <MakeTen puzzle={generateDailyPuzzle()} />;
 }

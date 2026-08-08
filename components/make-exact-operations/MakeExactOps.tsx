@@ -1,27 +1,31 @@
 "use client";
 
 import React, { useState } from "react";
-import { Toaster, toast } from "sonner";
-import { ModeToggle } from "@/app/components/mode-toggle";
-import { useSimpleGameState } from "@/lib/make-exact-operations/use-simple-game-state";
-import { useSecureTimer } from "@/lib/make-exact-operations/use-secure-timer";
-import InfoDialog from "@/app/components/make-exact-operations/InfoDialog";
-import { getNextPuzzleTime } from "@/lib/date-utils";
+import { toast } from "sonner";
 import Link from "next/link";
+import { ModeToggle } from "@/components/mode-toggle";
 import ShareOptions from "@/components/ShareOptions";
-import { generateDailyExactOpsPuzzle } from "@/lib/make-exact-operations/puzzle-generator";
+import LocalStorageDebugger from "@/components/game/LocalStorageDebugger";
+import StreakSummary from "@/components/game/StreakSummary";
+import MakeExactOpsInfoDialog from "./InfoDialog";
 import ExpressionBuilder from "./ExpressionBuilder";
+import { getNextPuzzleTime } from "@/lib/date-utils";
+import { DEBUG_MODE } from "@/lib/constants";
+import { MAKE_EXACT_OPS_GAME } from "@/lib/games/config";
+import { useGameState } from "@/lib/games/use-game-state";
+import { useSecureTimer } from "@/lib/games/use-secure-timer";
+import { buildShareText } from "@/lib/games/share-text";
 import { useClientValue } from "@/lib/use-client-value";
 import { evaluateArithmetic } from "@/lib/expression-eval";
+import type { ExactOpsPuzzle } from "@/lib/make-exact-operations/puzzle-generator";
 
-type ExactOpsPuzzle = ReturnType<typeof generateDailyExactOpsPuzzle>;
+interface MakeExactOpsProps {
+  /** Today's puzzle, resolved on the server */
+  puzzle: ExactOpsPuzzle;
+}
 
-const NO_PUZZLE: ExactOpsPuzzle | null = null;
-
-export default function MakeExactOps() {
-  // Both depend on the current date and the visitor's time zone, so they can
-  // only be resolved in the browser - this page is prerendered at build time.
-  const currentPuzzle = useClientValue(generateDailyExactOpsPuzzle, NO_PUZZLE);
+export default function MakeExactOps({ puzzle: currentPuzzle }: MakeExactOpsProps) {
+  // Depends on the visitor's time zone, so it can only be resolved in the browser
   const localResetTime = useClientValue(
     () => getNextPuzzleTime().formattedString,
     ""
@@ -36,12 +40,12 @@ export default function MakeExactOps() {
     lastSolution,
     solvePuzzle,
     resetGameState,
-  } = useSimpleGameState();
+  } = useGameState(MAKE_EXACT_OPS_GAME);
 
-  const { getElapsedTime } = useSecureTimer(solved);
+  const { getElapsedTime } = useSecureTimer(MAKE_EXACT_OPS_GAME, solved);
 
   // One slot between each pair of numbers, all empty until the player fills them
-  const slotCount = currentPuzzle ? currentPuzzle.numbers.length - 1 : 0;
+  const slotCount = currentPuzzle.numbers.length - 1;
   const selectedOperators =
     chosenOperators.length === slotCount
       ? chosenOperators
@@ -62,8 +66,6 @@ export default function MakeExactOps() {
   };
 
   const checkSolution = () => {
-    if (!currentPuzzle) return;
-
     // Check if all operators are placed
     if (selectedOperators.some((op) => !op)) {
       toast.error("Please place all operators");
@@ -97,36 +99,25 @@ export default function MakeExactOps() {
   };
 
   const resetPuzzle = () => {
-    setSelectedOperators(new Array(currentPuzzle!.numbers.length - 1).fill(""));
+    setSelectedOperators(new Array(slotCount).fill(""));
     resetGameState();
   };
 
-  const getShareText = () => {
-    if (!currentPuzzle || !solveTime) return "";
-
-    const formattedTime = solveTime.toFixed(2);
-    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
-
-    return `I solved today's #MakeExactOperations in ${formattedTime}s!${
-      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
-    }\n\nPlay now: https://maketen.vercel.app/make-exact-operations`;
-  };
-
-  if (!currentPuzzle) return null;
+  const getShareText = () =>
+    solveTime
+      ? buildShareText({
+          hashtag: "MakeExactOperations",
+          solveTime,
+          streak: streaks.streak,
+          url: "https://maketen.vercel.app/make-exact-operations",
+        })
+      : "";
 
   return (
     <div className="flex flex-col items-center min-h-screen w-screen bg-background">
-      <Toaster
-        position="bottom-right"
-        closeButton
-        richColors
-        theme={undefined}
-        className="sm:max-w-[420px]"
-      />
-
       {/* Theme Toggle and Info */}
       <div className="fixed top-4 right-4 flex items-center gap-2">
-        <InfoDialog />
+        <MakeExactOpsInfoDialog />
         <ModeToggle />
       </div>
 
@@ -185,14 +176,11 @@ export default function MakeExactOps() {
         )}
 
         {/* Streaks */}
-        <div className="space-y-3 text-center mt-4">
-          <p className="text-lg text-muted-foreground">
-            Current Streak (under 1 min): {streaks.streak}
-          </p>
-          <p className="text-lg text-muted-foreground">
-            Longest Streak (under 1 min): {streaks.longestStreak}
-          </p>
-        </div>
+        <StreakSummary
+          game={MAKE_EXACT_OPS_GAME}
+          streaks={streaks}
+          className="mt-4"
+        />
 
         {/* Share Options */}
         {solved && solveTime && (
@@ -203,6 +191,8 @@ export default function MakeExactOps() {
           />
         )}
       </div>
+
+      {DEBUG_MODE && <LocalStorageDebugger game={MAKE_EXACT_OPS_GAME} />}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/app/components/theme-provider";
+import { ThemeProvider } from "@/components/theme-provider";
 import Layout from "@/components/layout/Layout";
+import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -34,6 +35,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <Layout>{children}</Layout>
+          <Toaster
+            position="bottom-right"
+            closeButton
+            richColors
+            className="sm:max-w-[420px]"
+          />
           <Analytics />
           <SpeedInsights />
         </ThemeProvider>

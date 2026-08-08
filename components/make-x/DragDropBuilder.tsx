@@ -10,7 +10,7 @@ import {
   ExpressionItem as ExpressionItemType,
 } from "@/lib/make-x/interfaces";
 import DraggableNumber from "./DraggableNumber";
-import DraggableOperator from "./DraggableOperator";
+import DraggableOperator from "@/components/game/DraggableOperator";
 import ExpressionItem from "./ExpressionItem";
 
 const DragDropBuilder: React.FC<DragDropBuilderProps> = ({

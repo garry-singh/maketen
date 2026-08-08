@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
-import DraggableOperator from "./DraggableOperator";
+import DraggableOperator from "@/components/game/DraggableOperator";
 import { cn } from "@/lib/utils";
 import { tryEvaluateArithmetic } from "@/lib/expression-eval";
 import {

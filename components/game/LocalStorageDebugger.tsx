@@ -1,31 +1,31 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { STORAGE_KEYS, DEBUG_MODE } from "@/lib/constants";
+import React, { useCallback, useEffect, useState } from "react";
+import { DEBUG_MODE } from "@/lib/constants";
 import { getTodayDateString, getYesterdayDateString } from "@/lib/date-utils";
+import { GameConfig } from "@/lib/games/config";
+import { removeStorageKeysWithPrefix } from "@/lib/games/storage";
 import { useClientValue } from "@/lib/use-client-value";
 
 interface DebuggerProps {
+  game: GameConfig;
   className?: string;
 }
 
 const EMPTY_STORAGE: Record<string, string> = {};
 
-const readStorageData = (): Record<string, string> => {
+const readStorageData = (game: GameConfig): Record<string, string> => {
   const data: Record<string, string> = {};
 
   try {
-    // Get all relevant localStorage values
-    Object.values(STORAGE_KEYS).forEach((key) => {
+    Object.values(game.storageKeys).forEach((key) => {
       data[key] = localStorage.getItem(key) || "null";
     });
 
-    // Get first load time for today
     const today = getTodayDateString();
-    const firstLoadKey = `${STORAGE_KEYS.FIRST_LOAD_TIME}_${today}`;
+    const firstLoadKey = `${game.storageKeys.FIRST_LOAD_TIME}_${today}`;
     data[firstLoadKey] = localStorage.getItem(firstLoadKey) || "null";
 
-    // Add date info
     data["TODAY"] = today;
     data["YESTERDAY"] = getYesterdayDateString();
 
@@ -38,10 +38,11 @@ const readStorageData = (): Record<string, string> => {
 };
 
 /**
- * Enhanced LocalStorage debugger with auto-refresh
+ * Development-only view of a game's localStorage, with buttons for forcing the
+ * states that are otherwise awkward to reach (missed days, long streaks).
  */
-const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
-  const initialData = useClientValue(readStorageData, EMPTY_STORAGE);
+const LocalStorageDebugger: React.FC<DebuggerProps> = ({ game, className }) => {
+  const initialData = useClientValue(() => readStorageData(game), EMPTY_STORAGE);
   const [refreshedData, setRefreshedData] = useState<Record<
     string,
     string
@@ -50,18 +51,15 @@ const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
 
   const refreshData = useCallback(() => {
     if (typeof window === "undefined") return;
-    setRefreshedData(readStorageData());
-  }, []);
+    setRefreshedData(readStorageData(game));
+  }, [game]);
 
-  // Periodic refresh
   useEffect(() => {
-    // Set up storage event listener for changes
     const handleStorageChange = () => {
       if (DEBUG_MODE) console.log("Storage changed, refreshing debugger");
       refreshData();
     };
 
-    // Listen for storage events and also poll regularly
     window.addEventListener("storage", handleStorageChange);
     const interval = setInterval(refreshData, 1000);
 
@@ -71,21 +69,12 @@ const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
     };
   }, [refreshData]);
 
-  // Reset all localStorage values
   const resetAll = () => {
     try {
-      Object.values(STORAGE_KEYS).forEach((key) => {
-        localStorage.removeItem(key);
-      });
-
-      // Also remove any daily first load times
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(STORAGE_KEYS.FIRST_LOAD_TIME)) {
-          localStorage.removeItem(key);
-        }
-      }
-
+      Object.values(game.storageKeys).forEach((key) =>
+        localStorage.removeItem(key)
+      );
+      removeStorageKeysWithPrefix(game.storageKeys.FIRST_LOAD_TIME);
       refreshData();
       if (DEBUG_MODE) console.log("All localStorage values reset");
     } catch (error) {
@@ -93,13 +82,14 @@ const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
     }
   };
 
-  // Set yesterday as solved date (for testing streak continuation)
   const setYesterdaySolved = () => {
     try {
-      const yesterday = getYesterdayDateString();
-      localStorage.setItem(STORAGE_KEYS.SOLVED_DATE, yesterday);
-      localStorage.setItem(STORAGE_KEYS.SOLVED_TODAY, "false");
-      localStorage.setItem(STORAGE_KEYS.STREAK, "3"); // Example streak
+      localStorage.setItem(
+        game.storageKeys.SOLVED_DATE,
+        getYesterdayDateString()
+      );
+      localStorage.setItem(game.storageKeys.SOLVED_TODAY, "false");
+      localStorage.setItem(game.storageKeys.STREAK, "3"); // Example streak
       refreshData();
       if (DEBUG_MODE) console.log("Set yesterday as solved");
     } catch (error) {
@@ -107,22 +97,19 @@ const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
     }
   };
 
-  // Set custom streak value
   const setCustomStreak = () => {
     try {
       const streak = prompt("Enter streak value:", "5");
       if (streak === null) return;
 
-      localStorage.setItem(STORAGE_KEYS.STREAK, streak);
+      localStorage.setItem(game.storageKeys.STREAK, streak);
 
-      // Update longest streak if needed
       const currentLongest = parseInt(
-        localStorage.getItem(STORAGE_KEYS.LONGEST_STREAK) || "0",
+        localStorage.getItem(game.storageKeys.LONGEST_STREAK) || "0",
         10
       );
-      const newStreak = parseInt(streak, 10);
-      if (newStreak > currentLongest) {
-        localStorage.setItem(STORAGE_KEYS.LONGEST_STREAK, streak);
+      if (parseInt(streak, 10) > currentLongest) {
+        localStorage.setItem(game.storageKeys.LONGEST_STREAK, streak);
       }
 
       refreshData();
@@ -134,7 +121,9 @@ const LocalStorageDebugger: React.FC<DebuggerProps> = ({ className }) => {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 p-4 bg-background border border-border rounded-lg shadow-lg max-w-md z-50 text-xs ${className}`}
+      className={`fixed bottom-4 right-4 p-4 bg-background border border-border rounded-lg shadow-lg max-w-md z-50 text-xs ${
+        className ?? ""
+      }`}
     >
       <h3 className="font-bold mb-2">LocalStorage Debugger</h3>
 

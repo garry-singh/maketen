@@ -1,18 +1,21 @@
 import { predefinedMakeXPuzzles } from "@/app/makeXPuzzles";
 import { getTodayDateString } from "../date-utils";
 import { MakeXPuzzle } from "../types";
+import { pickForDate, shuffleForDate } from "../games/daily-puzzle";
 
+/**
+ * Picks today's Make X puzzle.
+ *
+ * Server-only: it pulls in the full puzzle catalogue, which must never reach
+ * the browser. Pages call this and pass the single puzzle down as a prop.
+ */
 export const generateDailyMakeXPuzzle = (): MakeXPuzzle => {
-    const today = getTodayDateString();
-    const seed = parseInt(today.replace(/-/g, "")); // Convert "2024-03-15" to 20240315
-    
-    // Select puzzle using the seed
-    const puzzle = predefinedMakeXPuzzles[seed % predefinedMakeXPuzzles.length];
-    
-    return {
-      ...puzzle,
-      // Optionally shuffle the numbers like Make Ten does
-      numbers: [...puzzle.numbers].sort(() => Math.random() - 0.5),
-      date: today
-    };
+  const today = getTodayDateString();
+  const puzzle = pickForDate(predefinedMakeXPuzzles, today);
+
+  return {
+    ...puzzle,
+    numbers: shuffleForDate(puzzle.numbers, today),
+    date: today,
   };
+};

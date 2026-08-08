@@ -1,15 +1,24 @@
 "use client";
 
 import React, { useEffect } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Toaster, toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { ModeToggle } from "@/app/components/mode-toggle";
+import { ModeToggle } from "@/components/mode-toggle";
 import { NUMBERS, OPERATORS, TARGET_NUMBER, DEBUG_MODE } from "@/lib/constants";
+import { MakeTenPuzzle } from "@/lib/types";
+import { MAKE_TEN_GAME } from "@/lib/games/config";
+import { useGameState } from "@/lib/games/use-game-state";
+import { useSecureTimer } from "@/lib/games/use-secure-timer";
+import { buildShareText } from "@/lib/games/share-text";
+import {
+  checkRateLimit,
+  validateInput,
+  manageStorageQuota,
+} from "@/lib/games/security";
 import { usePuzzle } from "@/lib/make-ten/use-puzzle";
-import { useSimpleGameState } from "@/lib/make-ten/use-simple-game-state";
-import { useSecureTimer } from "@/lib/make-ten/use-secure-timer";
 import { getNextPuzzleTime } from "@/lib/date-utils";
 import { useClientValue } from "@/lib/use-client-value";
 import {
@@ -18,39 +27,34 @@ import {
   validateResult,
 } from "@/lib/make-ten/validation";
 import KeyboardButton from "./KeyboardButton";
-import LoadingErrorView from "@/components/LoadingErrorView";
 import ShareOptions from "@/components/ShareOptions";
-import LocalStorageDebugger from "@/components/make-ten/LocalStorageDebugger";
-import InfoDialog from "@/components/make-ten/InfoDialog";
-import {
-  checkRateLimit,
-  validateInput,
-  manageStorageQuota,
-} from "@/lib/make-ten/security";
-import Link from "next/link";
+import LocalStorageDebugger from "@/components/game/LocalStorageDebugger";
+import StreakSummary from "@/components/game/StreakSummary";
+import MakeTenInfoDialog from "./InfoDialog";
+
+interface MakeTenProps {
+  /** Today's puzzle, resolved on the server */
+  puzzle: MakeTenPuzzle;
+}
 
 /**
  * Main component for the Make Ten game
- * Fixed version with improved localStorage handling and solution persistence
  */
-const MakeTen: React.FC = () => {
+const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
   const {
-    puzzle,
     userInput,
     setUserInput,
     usedNumbers,
-    isLoading,
-    error,
     handleKeyboardInput,
     handleInputChange,
-  } = usePuzzle();
+  } = usePuzzle(puzzle);
 
   // Use simplified game state management with lastSolution tracking
   const { streaks, solved, solveTime, lastSolution, solvePuzzle } =
-    useSimpleGameState();
+    useGameState(MAKE_TEN_GAME);
 
   // Use secure timer to prevent streak farming
-  const { getElapsedTime } = useSecureTimer(solved);
+  const { getElapsedTime } = useSecureTimer(MAKE_TEN_GAME, solved);
 
   // Reset time display - depends on the visitor's time zone
   const localResetTime = useClientValue(
@@ -85,7 +89,7 @@ const MakeTen: React.FC = () => {
    * Validate and check the user's solution
    */
   const checkSolution = () => {
-    if (solved || !puzzle) return;
+    if (solved) return;
 
     if (!userInput) {
       toast.error("Please enter a solution first!");
@@ -140,7 +144,7 @@ const MakeTen: React.FC = () => {
       );
 
       // Manage storage quota after successful solve
-      manageStorageQuota().catch(console.error);
+      manageStorageQuota(MAKE_TEN_GAME).catch(console.error);
 
       if (DEBUG_MODE) {
         // Force local storage debugger update
@@ -152,62 +156,25 @@ const MakeTen: React.FC = () => {
     }
   };
 
-  const getShareText = () => {
-    if (!userInput || !solveTime) return "";
-
-    const formattedTime = solveTime.toFixed(2);
-    const streakText = streaks.streak > 0 ? `${streaks.streak} day streak` : "";
-
-    const maskedSolution = userInput
-      .replace(/[0-9]/g, "⬛")
-      .replace(/[\(\)]/g, "⬜");
-
-    const coloredOperators = maskedSolution
-      .replace(/[+]/g, "➕")
-      .replace(/[-]/g, "➖")
-      .replace(/[*]/g, "✖️")
-      .replace(/[/]/g, "➗");
-
-    return `I solved today's #Make10 in ${formattedTime}s! \n\nMy solution: ${coloredOperators}${
-      streakText ? `\n\n🔥 I'm on a ${streakText}!` : ""
-    }\n\nPlay now: https://maketen.vercel.app/`;
-  };
-
-  // Handle loading and error states
-  if (isLoading) {
-    return <LoadingErrorView />;
-  }
-
-  if (error) {
-    return <LoadingErrorView message={error} showRefresh />;
-  }
-
-  if (!puzzle) {
-    return (
-      <LoadingErrorView
-        message="Failed to load puzzle. Please refresh the page."
-        showRefresh
-      />
-    );
-  }
-
-  // Determine which solution to use for sharing
   // Use userInput if available, otherwise fall back to lastSolution
   const solutionToShare = userInput || lastSolution;
 
+  const getShareText = () =>
+    solveTime
+      ? buildShareText({
+          hashtag: "Make10",
+          solveTime,
+          streak: streaks.streak,
+          solution: solutionToShare,
+          url: "https://maketen.vercel.app/",
+        })
+      : "";
+
   return (
     <div className="flex flex-col items-center min-h-screen w-screen bg-background">
-      <Toaster
-        position="bottom-right"
-        closeButton
-        richColors
-        theme={undefined}
-        className="sm:max-w-[420px]"
-      />
-
       {/* Theme Toggle and Info */}
       <div className="fixed top-4 right-4 flex items-center gap-2">
-        <InfoDialog />
+        <MakeTenInfoDialog />
         <ModeToggle />
       </div>
 
@@ -395,14 +362,7 @@ const MakeTen: React.FC = () => {
       </div>
 
       {/* Message & Streaks */}
-      <div className="space-y-3 text-center mt-4">
-        <p className="text-lg text-muted-foreground">
-          Current Streak (under 45 sec): {streaks.streak}
-        </p>
-        <p className="text-lg text-muted-foreground">
-          Longest Streak (under 45 sec): {streaks.longestStreak}
-        </p>
-      </div>
+      <StreakSummary game={MAKE_TEN_GAME} streaks={streaks} className="mt-4" />
 
       {/* Sharing Options - Pass the correct solution */}
       {solved && solveTime && (
@@ -414,7 +374,7 @@ const MakeTen: React.FC = () => {
       )}
 
       {/* Debug component - only shown in development */}
-      {process.env.NODE_ENV === "development" && <LocalStorageDebugger />}
+      {DEBUG_MODE && <LocalStorageDebugger game={MAKE_TEN_GAME} />}
     </div>
   );
 };
