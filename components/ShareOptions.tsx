@@ -75,6 +75,11 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
   // If we don't have a solution or time, show disabled buttons
   const isShareDisabled = !userInput || !solveTime;
 
+  // Prefill the post rather than sending the player to our profile page
+  const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(
+    shareText
+  )}&via=${SOCIAL_LINKS.twitterHandle}`;
+
   if (isShareDisabled && DEBUG_MODE) {
     console.log("Share buttons disabled - missing data", {
       userInput,
@@ -92,7 +97,7 @@ const ShareOptions: React.FC<ShareOptionsProps> = ({
         disabled={isShareDisabled}
       >
         <a
-          href={isShareDisabled ? undefined : SOCIAL_LINKS.twitter}
+          href={isShareDisabled ? undefined : tweetUrl}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Share on X"

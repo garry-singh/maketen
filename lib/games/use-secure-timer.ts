@@ -1,89 +1,92 @@
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { DEBUG_MODE } from "../constants";
 import { getTodayDateString } from "../date-utils";
-import { GameConfig } from "./config";
+import { useClientValue } from "../use-client-value";
+import { GameConfig, GameStorageKeys } from "./config";
 
 /**
- * Times the puzzle from the day's first page load, so reloading cannot reset
- * the clock and farm streaks.
+ * Deliberately not FIRST_LOAD_TIME. That key used to be written on page load,
+ * so values under it mean "when the tab opened", not "when the player started".
+ * Reusing it would let stale entries skip the start gate and count idle time.
+ */
+const startKey = (keys: GameStorageKeys) =>
+  `${keys.PUZZLE_START_TIME}_${getTodayDateString()}`;
+
+const readStoredStart = (keys: GameStorageKeys): number | null => {
+  try {
+    const stored = localStorage.getItem(startKey(keys));
+    return stored ? parseInt(stored, 10) : null;
+  } catch (error) {
+    console.error("Error reading puzzle start time:", error);
+    return null;
+  }
+};
+
+/**
+ * Times how long the player took on today's puzzle.
  *
- * The authoritative start time lives in localStorage, so it is kept in a ref
- * rather than state - nothing renders it, and it must not trigger a re-render.
+ * The clock is started explicitly, by the player pressing Start - the puzzle
+ * stays hidden until then, so the timer covers the thinking and not just the
+ * typing. Once started it is pinned in localStorage for the rest of the day, so
+ * reloading cannot rewind it.
+ *
+ * Note this is only as trustworthy as the browser it runs in: a determined
+ * player can edit localStorage. It exists to make the honest path the easy one,
+ * not to be tamper-proof.
  *
  * @param config - Identifies which game's storage keys to use
  * @param solved - Whether the puzzle is already solved
  */
 export function useSecureTimer(config: GameConfig, solved: boolean) {
   const { storageKeys } = config;
-  const startTimeRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // A clock started earlier today (the player reloaded mid-puzzle)
+  const storedStart = useClientValue<number | null>(
+    () => readStoredStart(storageKeys),
+    null
+  );
+  const [freshStart, setFreshStart] = useState<number | null>(null);
 
-    startTimeRef.current ??= Date.now();
-
-    const today = getTodayDateString();
-    const firstLoadKey = `${storageKeys.FIRST_LOAD_TIME}_${today}`;
-
-    try {
-      const savedPuzzleDate = localStorage.getItem(storageKeys.PUZZLE_DATE);
-
-      if (savedPuzzleDate !== today) {
-        // New day - start the clock now
-        const now = Date.now();
-        localStorage.setItem(firstLoadKey, now.toString());
-        localStorage.setItem(storageKeys.PUZZLE_DATE, today);
-        startTimeRef.current = now;
-        if (DEBUG_MODE) console.log(`New day, set first load time: ${now}`);
-        return;
-      }
-
-      const firstLoadTime = localStorage.getItem(firstLoadKey);
-
-      if (firstLoadTime) {
-        // Same day, already timed - keep the original start
-        startTimeRef.current = parseInt(firstLoadTime, 10);
-        if (DEBUG_MODE)
-          console.log(`Using existing first load time: ${firstLoadTime}`);
-      } else if (!solved) {
-        // Same day, first unsolved visit - start the clock now
-        const now = Date.now();
-        localStorage.setItem(firstLoadKey, now.toString());
-        startTimeRef.current = now;
-        if (DEBUG_MODE) console.log(`Set first load time: ${now}`);
-      }
-    } catch (error) {
-      console.error("Error in useSecureTimer:", error);
-      startTimeRef.current = Date.now();
-    }
-  }, [solved, storageKeys]);
+  const startedAt = freshStart ?? storedStart;
 
   /**
-   * @returns Seconds elapsed since the day's first page load
+   * Starts the day's clock. Every later call is a no-op, so elapsed time can
+   * only ever grow.
    */
-  const getElapsedTime = (): number => {
-    const sessionStart = startTimeRef.current ?? Date.now();
+  const startTimer = () => {
+    if (solved || startedAt !== null) return;
 
-    try {
-      const today = getTodayDateString();
-      const firstLoadTime = localStorage.getItem(
-        `${storageKeys.FIRST_LOAD_TIME}_${today}`
-      );
-      const earliestTime = firstLoadTime
-        ? parseInt(firstLoadTime, 10)
-        : sessionStart;
-
-      const elapsed = parseFloat(
-        ((Date.now() - earliestTime) / 1000).toFixed(3)
-      );
-      if (DEBUG_MODE)
-        console.log(`Elapsed time: ${elapsed}s from time: ${earliestTime}`);
-      return elapsed;
-    } catch (error) {
-      console.error("Error calculating elapsed time:", error);
-      return parseFloat(((Date.now() - sessionStart) / 1000).toFixed(3));
+    // Another tab may have started the clock already - that one wins
+    const existing = readStoredStart(storageKeys);
+    if (existing !== null) {
+      setFreshStart(existing);
+      return;
     }
+
+    const now = Date.now();
+    try {
+      localStorage.setItem(startKey(storageKeys), String(now));
+    } catch (error) {
+      console.error("Error recording puzzle start time:", error);
+    }
+    setFreshStart(now);
+    if (DEBUG_MODE) console.log(`Clock started: ${now}`);
   };
 
-  return { getElapsedTime };
+  /**
+   * @returns Seconds since the player pressed Start, or 0 if they never did
+   */
+  const getElapsedTime = (): number => {
+    // Storage wins: it survives reloads, component state does not
+    const authoritative = readStoredStart(storageKeys) ?? startedAt;
+    if (authoritative === null) return 0;
+
+    const elapsed = parseFloat(
+      ((Date.now() - authoritative) / 1000).toFixed(3)
+    );
+    if (DEBUG_MODE) console.log(`Elapsed: ${elapsed}s from ${authoritative}`);
+    return elapsed;
+  };
+
+  return { hasStarted: startedAt !== null, startTimer, getElapsedTime };
 }

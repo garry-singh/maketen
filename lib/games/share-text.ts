@@ -20,6 +20,8 @@ export const maskSolution = (solution: string): string =>
 interface ShareTextOptions {
   /** Hashtag for the game, e.g. "Make10" */
   hashtag: string;
+  /** Identifies which day's puzzle this was, so shares are comparable */
+  puzzleNumber: number;
   solveTime: number;
   streak: number;
   url: string;
@@ -29,6 +31,7 @@ interface ShareTextOptions {
 
 export const buildShareText = ({
   hashtag,
+  puzzleNumber,
   solveTime,
   streak,
   url,
@@ -40,7 +43,7 @@ export const buildShareText = ({
   const streakLine =
     streak > 0 ? `\n\n🔥 I'm on a ${streak} day streak!` : "";
 
-  return `I solved today's #${hashtag} in ${solveTime.toFixed(
+  return `I solved #${hashtag} #${puzzleNumber} in ${solveTime.toFixed(
     2
   )}s!${solutionLine}${streakLine}\n\nPlay now: ${url}`;
 };

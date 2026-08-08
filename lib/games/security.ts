@@ -1,6 +1,6 @@
 import { SECURITY } from "../constants";
 import { GameConfig } from "./config";
-import { removeStorageKeysWithPrefix } from "./storage";
+import { removeStorageKeysWithPrefix, timingKeyPrefixes } from "./storage";
 
 const ATTEMPTS_KEY = "solution_attempts";
 
@@ -52,7 +52,7 @@ export const manageStorageQuota = async (config: GameConfig) => {
     if (!usage || !quota || usage / quota <= 0.9) return;
 
     localStorage.removeItem(ATTEMPTS_KEY);
-    removeStorageKeysWithPrefix(config.storageKeys.FIRST_LOAD_TIME);
+    removeStorageKeysWithPrefix(...timingKeyPrefixes(config.storageKeys));
   } catch (error) {
     console.error("Error managing storage quota:", error);
   }

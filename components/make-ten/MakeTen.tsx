@@ -9,10 +9,16 @@ import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/mode-toggle";
 import { NUMBERS, OPERATORS, TARGET_NUMBER, DEBUG_MODE } from "@/lib/constants";
 import { MakeTenPuzzle } from "@/lib/types";
-import { MAKE_TEN_GAME } from "@/lib/games/config";
+import {
+  MAKE_TEN_GAME,
+  MAKE_X_GAME,
+  MAKE_EXACT_OPS_GAME,
+  gameUrl,
+} from "@/lib/games/config";
 import { useGameState } from "@/lib/games/use-game-state";
 import { useSecureTimer } from "@/lib/games/use-secure-timer";
 import { buildShareText } from "@/lib/games/share-text";
+import { puzzleNumber } from "@/lib/games/daily-puzzle";
 import {
   checkRateLimit,
   validateInput,
@@ -29,8 +35,13 @@ import {
 import KeyboardButton from "./KeyboardButton";
 import ShareOptions from "@/components/ShareOptions";
 import LocalStorageDebugger from "@/components/game/LocalStorageDebugger";
-import StreakSummary from "@/components/game/StreakSummary";
-import MakeTenInfoDialog from "./InfoDialog";
+import StatsSummary from "@/components/game/StatsSummary";
+import StartGate from "@/components/game/StartGate";
+import HomeLink from "@/components/game/HomeLink";
+import RevealedAnswer from "@/components/game/RevealedAnswer";
+import OtherModes from "@/components/game/OtherModes";
+import GiveUpButton from "@/components/game/GiveUpButton";
+import InfoDialog from "@/components/game/InfoDialog";
 
 interface MakeTenProps {
   /** Today's puzzle, resolved on the server */
@@ -50,11 +61,25 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
   } = usePuzzle(puzzle);
 
   // Use simplified game state management with lastSolution tracking
-  const { streaks, solved, solveTime, lastSolution, solvePuzzle } =
-    useGameState(MAKE_TEN_GAME);
+  const {
+    streaks,
+    stats,
+    solved,
+    revealed,
+    solveTime,
+    lastSolution,
+    solvePuzzle,
+    revealAnswer,
+  } = useGameState(MAKE_TEN_GAME);
 
   // Use secure timer to prevent streak farming
-  const { getElapsedTime } = useSecureTimer(MAKE_TEN_GAME, solved);
+  const { hasStarted, startTimer, getElapsedTime } = useSecureTimer(MAKE_TEN_GAME, solved);
+
+  // The day is over once the puzzle is solved or the answer has been revealed
+  const finished = solved || revealed;
+  // The puzzle stays hidden until the player starts the clock
+  const showPuzzle = finished || hasStarted;
+  const playing = hasStarted && !finished;
 
   // Reset time display - depends on the visitor's time zone
   const localResetTime = useClientValue(
@@ -81,7 +106,6 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
       return;
     }
 
-    // For all other keys, delegate to the original handler
     handleKeyboardInput(key, solved);
   };
 
@@ -162,19 +186,22 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
   const getShareText = () =>
     solveTime
       ? buildShareText({
-          hashtag: "Make10",
+          hashtag: MAKE_TEN_GAME.hashtag,
+          puzzleNumber: puzzleNumber(puzzle.date),
           solveTime,
           streak: streaks.streak,
           solution: solutionToShare,
-          url: "https://maketen.vercel.app/",
+          url: gameUrl(MAKE_TEN_GAME),
         })
       : "";
 
   return (
     <div className="flex flex-col items-center min-h-screen w-screen bg-background">
       {/* Theme Toggle and Info */}
+      <HomeLink />
+
       <div className="fixed top-4 right-4 flex items-center gap-2">
-        <MakeTenInfoDialog />
+        <InfoDialog game={MAKE_TEN_GAME} />
         <ModeToggle />
       </div>
 
@@ -185,15 +212,23 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
           Make 10
         </h1>
 
-        {!solved && (
+        {playing && (
           <p className="text-xl text-muted-foreground text-center lg:text-2xl">
             Use only basic operations and all these numbers exactly once to make
             10:
           </p>
         )}
 
+        {!finished && !hasStarted && (
+          <StartGate
+            game={MAKE_TEN_GAME}
+            reveals="today's numbers and the keypad"
+            onStart={startTimer}
+          />
+        )}
+
         {/* Puzzle Numbers */}
-        {!solved && (
+        {!solved && showPuzzle && (
           <div
             className="text-center text-4xl font-bold space-x-4 my-6 lg:text-5xl lg:my-8"
             role="status"
@@ -213,6 +248,10 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
           </div>
         )}
 
+        {revealed && (
+          <RevealedAnswer solution={puzzle.solution} />
+        )}
+
         {/* Input Field */}
         {solved ? (
           <>
@@ -227,7 +266,7 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
                   <p className="text-muted-foreground">
                     Try our new{" "}
                     <Link
-                      href="/make-exact-operations"
+                      href={MAKE_EXACT_OPS_GAME.path}
                       className="text-primary hover:underline font-medium"
                     >
                       Make Exact Operations
@@ -241,19 +280,22 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
             <p className="text-center text-lg text-muted-foreground mb-4 lg:mb-8 lg:text-2xl">
               Come back at {localResetTime} for a new puzzle!{" "}
               <Link
-                href="/make-exact-operations"
+                href={MAKE_EXACT_OPS_GAME.path}
                 className="text-primary hover:underline"
               >
                 Try Make Exact Operations
               </Link>{" "}
               or{" "}
-              <Link href="/make-x" className="text-primary hover:underline">
-                Make X
+              <Link
+                href={MAKE_X_GAME.path}
+                className="text-primary hover:underline"
+              >
+                {MAKE_X_GAME.name}
               </Link>{" "}
               until then!
             </p>
           </>
-        ) : (
+        ) : playing ? (
           <Input
             type="text"
             value={userInput}
@@ -264,10 +306,11 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
             aria-label="Enter your solution"
             placeholder="Enter your solution"
           />
-        )}
+        ) : null}
       </div>
 
       {/* Keyboard - Desktop Layout */}
+      {playing && (
       <div
         className="w-full max-w-4xl mx-auto hidden md:flex flex-col items-center justify-center pb-12"
         role="group"
@@ -314,8 +357,10 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
           </Button>
         )}
       </div>
+      )}
 
       {/* Mobile Layout - Sticks to Bottom */}
+      {playing && (
       <div
         className="w-full max-w-sm mx-auto md:hidden p-4"
         role="group"
@@ -360,9 +405,13 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
           </Button>
         )}
       </div>
+      )}
 
-      {/* Message & Streaks */}
-      <StreakSummary game={MAKE_TEN_GAME} streaks={streaks} className="mt-4" />
+      {playing && (
+        <div className="mt-6">
+          <GiveUpButton onReveal={revealAnswer} />
+        </div>
+      )}
 
       {/* Sharing Options - Pass the correct solution */}
       {solved && solveTime && (
@@ -372,6 +421,14 @@ const MakeTen: React.FC<MakeTenProps> = ({ puzzle }) => {
           shareText={getShareText()}
         />
       )}
+
+        <StatsSummary
+          game={MAKE_TEN_GAME}
+          streaks={streaks}
+          stats={stats}
+          className="mt-8 mb-8"
+        />
+        <OtherModes current={MAKE_TEN_GAME} />
 
       {/* Debug component - only shown in development */}
       {DEBUG_MODE && <LocalStorageDebugger game={MAKE_TEN_GAME} />}

@@ -4,7 +4,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import { DEBUG_MODE } from "@/lib/constants";
 import { getTodayDateString, getYesterdayDateString } from "@/lib/date-utils";
 import { GameConfig } from "@/lib/games/config";
-import { removeStorageKeysWithPrefix } from "@/lib/games/storage";
+import {
+  removeStorageKeysWithPrefix,
+  timingKeyPrefixes,
+} from "@/lib/games/storage";
 import { useClientValue } from "@/lib/use-client-value";
 
 interface DebuggerProps {
@@ -23,8 +26,8 @@ const readStorageData = (game: GameConfig): Record<string, string> => {
     });
 
     const today = getTodayDateString();
-    const firstLoadKey = `${game.storageKeys.FIRST_LOAD_TIME}_${today}`;
-    data[firstLoadKey] = localStorage.getItem(firstLoadKey) || "null";
+    const startKey = `${game.storageKeys.PUZZLE_START_TIME}_${today}`;
+    data[startKey] = localStorage.getItem(startKey) || "null";
 
     data["TODAY"] = today;
     data["YESTERDAY"] = getYesterdayDateString();
@@ -74,7 +77,7 @@ const LocalStorageDebugger: React.FC<DebuggerProps> = ({ game, className }) => {
       Object.values(game.storageKeys).forEach((key) =>
         localStorage.removeItem(key)
       );
-      removeStorageKeysWithPrefix(game.storageKeys.FIRST_LOAD_TIME);
+      removeStorageKeysWithPrefix(...timingKeyPrefixes(game.storageKeys));
       refreshData();
       if (DEBUG_MODE) console.log("All localStorage values reset");
     } catch (error) {

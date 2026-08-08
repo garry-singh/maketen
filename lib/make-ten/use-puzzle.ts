@@ -36,17 +36,22 @@ export const usePuzzle = (puzzle: MakeTenPuzzle) => {
   };
 
   /**
-   * Remove the last used number when backspace is pressed
+   * Release the number that backspace just deleted.
+   *
+   * Has to match on the deleted digit's value: releasing whichever slot was
+   * marked last instead greys out the wrong number whenever the player types
+   * them in an order that differs from the puzzle's own.
    */
   const removeLastUsedNumber = () => {
-    const lastNum = parseInt(userInput[userInput.length - 1]);
-    if (!isNaN(lastNum)) {
-      const lastUsedIndex = usedNumbers.lastIndexOf(1);
+    const deleted = parseInt(userInput[userInput.length - 1]);
+    if (isNaN(deleted)) return;
 
-      if (lastUsedIndex !== -1) {
+    for (let i = usedNumbers.length - 1; i >= 0; i--) {
+      if (puzzle.numbers[i] === deleted && usedNumbers[i] === 1) {
         const updatedUsage = [...usedNumbers];
-        updatedUsage[lastUsedIndex] = 0; // Mark as unused
+        updatedUsage[i] = 0; // Mark as unused
         setUsedNumbers(updatedUsage);
+        return;
       }
     }
   };

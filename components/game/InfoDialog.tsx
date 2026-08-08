@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { FaCircleInfo } from "react-icons/fa6";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,23 +14,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { GameConfig, formatStreakLimit } from "@/lib/games/config";
+import { rulesFor } from "@/lib/games/rules";
 
 interface InfoDialogProps {
   game: GameConfig;
-  /** One-line summary of the objective */
-  objective: string;
-  rules: string[];
-  example: string[];
 }
 
 /**
- * "How to play" dialog shared by every game mode.
- *
- * The streak line is derived from the game config, so it can never disagree
- * with the limit `solvePuzzle` actually enforces.
+ * In-game "How to play" summary. Content comes from the shared rules, so it
+ * always matches the full How to play page.
  */
-const InfoDialog = ({ game, objective, rules, example }: InfoDialogProps) => {
+const InfoDialog = ({ game }: InfoDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { objective, rules, example } = rulesFor(game);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -44,7 +41,7 @@ const InfoDialog = ({ game, objective, rules, example }: InfoDialogProps) => {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="sm:max-w-[425px]"
+        className="sm:max-w-[425px] max-h-[85vh] overflow-y-auto"
         onPointerDownOutside={(e) => e.preventDefault()} // Prevent accidental closes
         onEscapeKeyDown={() => setIsOpen(false)}
       >
@@ -82,8 +79,15 @@ const InfoDialog = ({ game, objective, rules, example }: InfoDialogProps) => {
             </div>
           </section>
 
+          <Link
+            href={`/how-to-play#${game.id}`}
+            className="block text-sm text-primary underline underline-offset-4"
+          >
+            Read the full rules
+          </Link>
+
           <DialogClose asChild>
-            <Button className="w-full mt-4" variant="secondary">
+            <Button className="w-full mt-2" variant="secondary">
               Got it!
             </Button>
           </DialogClose>
